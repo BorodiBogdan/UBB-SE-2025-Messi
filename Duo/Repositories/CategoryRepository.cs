@@ -10,7 +10,7 @@ namespace Duo.Repositories
 {
     public class CategoryRepository
     {
-        private readonly DataLink _dataLink;
+        private readonly IDatabaseConnection _dataLink;
 
         public CategoryRepository(DataLink dataLink)
         {

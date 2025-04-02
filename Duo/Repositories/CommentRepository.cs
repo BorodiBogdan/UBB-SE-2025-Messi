@@ -13,10 +13,9 @@ namespace Duo.Repositories
 {
     public class CommentRepository : ICommentRepository
     {
-        private readonly DataLink _dataLink;
-        private Mock<DataLink> dataLink;
+        private readonly IDatabaseConnection _dataLink;
 
-        public CommentRepository(DataLink dataLink)
+        public CommentRepository(IDatabaseConnection dataLink)
         {
             _dataLink = dataLink ?? throw new ArgumentNullException(nameof(dataLink));
         }

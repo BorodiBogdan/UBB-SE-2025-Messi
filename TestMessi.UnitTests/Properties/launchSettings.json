@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "TestMessi.UnitTests (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "TestMessi.UnitTests (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
