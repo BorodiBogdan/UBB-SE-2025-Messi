@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+	<!-- Configurations for test execution -->
+	<RunConfiguration>
+		<MaxCpuCount>1</MaxCpuCount>
+		<!-- Number of CPU cores to use -->
+		<TargetPlatform>x64</TargetPlatform>
+		<!-- x86 or x64 -->
+		<TargetFrameworkVersion>FrameworkCore10</TargetFrameworkVersion>
+		<!-- Adjust for your .NET version -->
+	</RunConfiguration>
+
+	<!-- Test logger and adapter settings -->
+	<LoggerRunSettings>
+		<Loggers>
+			<Logger friendlyName="console" />
+		</Loggers>
+	</LoggerRunSettings>
+
+	<!-- MSTest specific settings -->
+	<MSTest>
+		<Parallelize>
+			<Workers>4</Workers>
+			<!-- Number of parallel threads -->
+			<Scope>ClassLevel</Scope>
+			<!-- MethodLevel or ClassLevel -->
+		</Parallelize>
+		<ForcedLegacyMode>true</ForcedLegacyMode>
+		<!-- For older test projects -->
+	</MSTest>
+</RunSettings>
