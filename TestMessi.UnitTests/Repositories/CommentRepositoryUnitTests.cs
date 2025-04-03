@@ -22,4 +22,10 @@ public class CommentRepositoryUnitTests
         var commentRepository = new CommentRepository(_dataLinkMock);
         Assert.IsNotNull(commentRepository);
     }
+    [TestMethod]
+    public void TestGetCommentRepository_CorrectlyInstanciated_R2eturnsInstance()
+    {
+        var commentRepository = new CommentRepository(_dataLinkMock);
+        Assert.IsNotNull(commentRepository);
+    }
 }
