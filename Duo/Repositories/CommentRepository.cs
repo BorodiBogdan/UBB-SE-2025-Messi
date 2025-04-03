@@ -6,14 +6,16 @@ using Microsoft.Data.SqlClient;
 using System.Collections.ObjectModel;
 using Duo.Models;
 using Duo.Data;
+using Duo.Repositories.Interfaces;
+using Moq;
 
 namespace Duo.Repositories
 {
-    public class CommentRepository
+    public class CommentRepository : ICommentRepository
     {
-        private readonly DataLink _dataLink;
+        private readonly IDatabaseConnection _dataLink;
 
-        public CommentRepository(DataLink dataLink)
+        public CommentRepository(IDatabaseConnection dataLink)
         {
             _dataLink = dataLink ?? throw new ArgumentNullException(nameof(dataLink));
         }
