@@ -1,31 +1,52 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <RunSettings>
 	<!-- Configurations for test execution -->
 	<RunConfiguration>
-		<MaxCpuCount>1</MaxCpuCount>
-		<!-- Number of CPU cores to use -->
 		<TargetPlatform>x64</TargetPlatform>
-		<!-- x86 or x64 -->
-		<TargetFrameworkVersion>FrameworkCore10</TargetFrameworkVersion>
-		<!-- Adjust for your .NET version -->
+		<!-- Matches your RuntimeIdentifiers -->
+		<TargetFrameworkVersion>net8.0</TargetFrameworkVersion>
+		<!-- Simplified to just net8.0 -->
+		<DesignMode>True</DesignMode>
+		<!-- Important for UI tests -->
+		<CollectSourceInformation>False</CollectSourceInformation>
+		<!-- Helps with COM exceptions -->
+		<DisableAppDomain>True</DisableAppDomain>
+		<!-- Recommended for WinUI tests -->
 	</RunConfiguration>
 
-	<!-- Test logger and adapter settings -->
+	<!-- Test logger settings -->
 	<LoggerRunSettings>
 		<Loggers>
 			<Logger friendlyName="console" />
+			<Logger friendlyName="trx" />
+			<!-- Adds TRX logger for test results -->
 		</Loggers>
 	</LoggerRunSettings>
 
-	<!-- MSTest specific settings -->
+	<!-- MSTest settings optimized for WinUI -->
 	<MSTest>
 		<Parallelize>
-			<Workers>4</Workers>
-			<!-- Number of parallel threads -->
+			<Workers>1</Workers>
+			<!-- Reduced to 1 for UI tests to avoid conflicts -->
 			<Scope>ClassLevel</Scope>
-			<!-- MethodLevel or ClassLevel -->
 		</Parallelize>
-		<ForcedLegacyMode>true</ForcedLegacyMode>
-		<!-- For older test projects -->
+		<ForcedLegacyMode>false</ForcedLegacyMode>
+		<!-- Set to false for modern test projects -->
+		<CaptureTraceOutput>true</CaptureTraceOutput>
+		<DeleteDeploymentDirectoryAfterTestRunIsComplete>true</DeleteDeploymentDirectoryAfterTestRunIsComplete>
 	</MSTest>
+
+	<!-- Special settings for Windows App SDK/WinUI tests -->
+	<TestRunParameters>
+		<Parameter name="WindowsAppSDKVersion" value="1.7.250310001" />
+		<!-- Matches your SDK version -->
+		<Parameter name="WinUITests" value="true" />
+	</TestRunParameters>
+
+	<!-- Deployment settings - important for packaged tests -->
+	<Deployment>
+		<DeploymentItem filename="Assets\" />
+		<!-- Deploy your test assets -->
+		<DeploymentItem filename="UnitTestApp.xaml" />
+	</Deployment>
 </RunSettings>
