@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "TesteBune (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "TesteBune (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

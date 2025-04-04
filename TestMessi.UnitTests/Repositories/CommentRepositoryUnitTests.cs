@@ -90,4 +90,13 @@ public class CommentRepositoryUnitTests
         Assert.IsInstanceOfType(result, typeof(int));
         Assert.AreEqual(3, result);
     }
+    [TestMethod]
+    public void TestGetCommentsCountForPost_ReturnsInts()
+    {
+        var commentRepository = new CommentRepository(_dataLinkMock);
+        var result = commentRepository.GetCommentsCountForPost(1);
+        Assert.IsInstanceOfType(result, typeof(int));
+        Assert.AreEqual(3, result);
+    }
+
 }
