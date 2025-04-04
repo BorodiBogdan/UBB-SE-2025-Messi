@@ -1,4 +1,4 @@
-﻿using Duo.Data;
+using Duo.Data;
 using Duo.Models;
 using Duo.Repositories;
 using Microsoft.Extensions.Configuration;
