@@ -367,3 +367,7 @@ onnx-models
 .idea
 
 /Duo/appsettings.json
+
+coverage_html
+coverage_report
+coverage_summary
