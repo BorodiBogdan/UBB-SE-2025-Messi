@@ -31,8 +31,8 @@ namespace Duo.Data
             {
                 { 1, "This is a comment", 1, 1, 1, DateTime.Now, 0, 0, "User1" },
                 { 2, "This is a reply", 2, 1, 1, DateTime.Now, 0, 1, "User2" },
-                { 3, "Another comment", 3, 1, 1, DateTime.Now, 0, 0, "User3" }
-            }
+                { 3, "Another comment", 3, 1, 1, DateTime.Now, 0, 0, "User3" },
+                }
             };
         }
     }
