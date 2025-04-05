@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using Xunit;
 
-namespace TestProject1
+namespace TestMessi.Repositories
 {
     public class CommentRepositoryTests
     {
