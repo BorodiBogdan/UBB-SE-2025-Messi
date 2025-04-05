@@ -12,46 +12,52 @@ namespace Duo.Repositories
 {
     public class PostRepository : IPostRepository
     {
-        private readonly IDatabaseConnection dataLink;
+        private readonly IDatabaseConnection _databaseConnection;
+        
+        // Constants for validation
+        private const int INVALID_ID = 0;
+        private const int MIN_PAGE_NUMBER = 1;
+        private const int MIN_PAGE_SIZE = 1;
+        private const int DEFAULT_COUNT = 0;
 
-        public PostRepository(IDatabaseConnection dataLink)
+        public PostRepository(IDatabaseConnection databaseConnection)
         {
-            this.dataLink = dataLink ?? throw new ArgumentNullException(nameof(dataLink));
+            this._databaseConnection = databaseConnection ?? throw new ArgumentNullException(nameof(databaseConnection));
         }
 
-        public int CreatePost(Post post)
+        public int CreatePost(Post postToCreate)
         {
-            if (post == null)
+            if (postToCreate == null)
             {
-                throw new ArgumentNullException(nameof(post), "Post cannot be null.");
+                throw new ArgumentNullException(nameof(postToCreate), "Post cannot be null.");
             }
 
-            if (string.IsNullOrWhiteSpace(post.Title) || string.IsNullOrWhiteSpace(post.Description))
+            if (string.IsNullOrWhiteSpace(postToCreate.Title) || string.IsNullOrWhiteSpace(postToCreate.Description))
             {
                 throw new ArgumentException("Title and Description cannot be empty.");
             }
 
-            if (post.UserID <= 0 || post.CategoryID <= 0)
+            if (postToCreate.UserID <= INVALID_ID || postToCreate.CategoryID <= INVALID_ID)
             {
                 throw new ArgumentException("Invalid UserID or CategoryID.");
             }
 
-            SqlParameter[] parameters = new SqlParameter[]
+            SqlParameter[] postParameters = new SqlParameter[]
             {
-                new SqlParameter("@Title", post.Title),
-                new SqlParameter("@Description", post.Description),
-                new SqlParameter("@UserID", post.UserID),
-                new SqlParameter("@CategoryID", post.CategoryID),
-                new SqlParameter("@CreatedAt", post.CreatedAt),
-                new SqlParameter("@UpdatedAt", post.UpdatedAt),
-                new SqlParameter("@LikeCount", post.LikeCount)
+                new SqlParameter("@Title", postToCreate.Title),
+                new SqlParameter("@Description", postToCreate.Description),
+                new SqlParameter("@UserID", postToCreate.UserID),
+                new SqlParameter("@CategoryID", postToCreate.CategoryID),
+                new SqlParameter("@CreatedAt", postToCreate.CreatedAt),
+                new SqlParameter("@UpdatedAt", postToCreate.UpdatedAt),
+                new SqlParameter("@LikeCount", postToCreate.LikeCount)
             };
 
             try
             {
-                int? result = dataLink.ExecuteScalar<int>("CreatePost", parameters);
+                int? postId = _databaseConnection.ExecuteScalar<int>("CreatePost", postParameters);
 
-                return result.Value;
+                return postId.Value;
 
             }
             catch (Exception ex)
@@ -60,182 +66,182 @@ namespace Duo.Repositories
             }
         }
 
-        public void DeletePost(int id)
+        public void DeletePost(int postId)
         {
-            if (id <= 0)
+            if (postId <= INVALID_ID)
             {
                 throw new ArgumentException("Invalid post ID.");
             }
 
-            SqlParameter[] parameters = new SqlParameter[]
+            SqlParameter[] deleteParameters = new SqlParameter[]
             {
-                new SqlParameter("@Id", id)
+                new SqlParameter("@Id", postId)
             };
 
-            dataLink.ExecuteNonQuery("DeletePost", parameters);
+            _databaseConnection.ExecuteNonQuery("DeletePost", deleteParameters);
         }
 
-        public void UpdatePost(Post post)
+        public void UpdatePost(Post postToUpdate)
         {
-            if (post == null)
+            if (postToUpdate == null)
             {
-                throw new ArgumentNullException(nameof(post), "Post cannot be null.");
+                throw new ArgumentNullException(nameof(postToUpdate), "Post cannot be null.");
             }
 
-            if (post.Id <= 0)
+            if (postToUpdate.Id <= INVALID_ID)
             {
                 throw new ArgumentException("Invalid post ID.");
             }
 
-            if (string.IsNullOrWhiteSpace(post.Title) || string.IsNullOrWhiteSpace(post.Description))
+            if (string.IsNullOrWhiteSpace(postToUpdate.Title) || string.IsNullOrWhiteSpace(postToUpdate.Description))
             {
                 throw new ArgumentException("Title and Description cannot be empty.");
             }
 
-            SqlParameter[] parameters = new SqlParameter[]
+            SqlParameter[] updateParameters = new SqlParameter[]
             {
-                new SqlParameter("@Id", post.Id),
-                new SqlParameter("@Title", post.Title),
-                new SqlParameter("@Description", post.Description),
-                new SqlParameter("@UserID", post.UserID),
-                new SqlParameter("@CategoryID", post.CategoryID),
-                new SqlParameter("@UpdatedAt", post.UpdatedAt),
-                new SqlParameter("@LikeCount", post.LikeCount)
+                new SqlParameter("@Id", postToUpdate.Id),
+                new SqlParameter("@Title", postToUpdate.Title),
+                new SqlParameter("@Description", postToUpdate.Description),
+                new SqlParameter("@UserID", postToUpdate.UserID),
+                new SqlParameter("@CategoryID", postToUpdate.CategoryID),
+                new SqlParameter("@UpdatedAt", postToUpdate.UpdatedAt),
+                new SqlParameter("@LikeCount", postToUpdate.LikeCount)
             };
 
-            dataLink.ExecuteNonQuery("UpdatePost", parameters);
+            _databaseConnection.ExecuteNonQuery("UpdatePost", updateParameters);
         }
 
-        public Post? GetPostById(int id)
+        public Post? GetPostById(int postId)
         {
-            if (id <= 0)
+            if (postId <= INVALID_ID)
             {
                 throw new ArgumentException("Invalid post ID.");
             }
 
-            SqlParameter[] parameters = new SqlParameter[]
+            SqlParameter[] queryParameters = new SqlParameter[]
             {
-                new SqlParameter("@Id", id)
+                new SqlParameter("@Id", postId)
             };
 
-            DataTable dataTable = dataLink.ExecuteReader("GetPostById", parameters);
+            DataTable postDataTable = _databaseConnection.ExecuteReader("GetPostById", queryParameters);
 
-            if (dataTable.Rows.Count > 0)
+            if (postDataTable.Rows.Count > DEFAULT_COUNT)
             {
-                DataRow row = dataTable.Rows[0];
+                DataRow postRow = postDataTable.Rows[0];
                 return new Post
                 {
-                    Id = Convert.ToInt32(row["Id"]),
-                    Title = Convert.ToString(row["Title"]) ?? string.Empty,
-                    Description = Convert.ToString(row["Description"]) ?? string.Empty,
-                    UserID = Convert.ToInt32(row["UserID"]),
-                    CategoryID = Convert.ToInt32(row["CategoryID"]),
-                    CreatedAt = Convert.ToDateTime(row["CreatedAt"]),
-                    UpdatedAt = Convert.ToDateTime(row["UpdatedAt"]),
-                    LikeCount = Convert.ToInt32(row["LikeCount"])
+                    Id = Convert.ToInt32(postRow["Id"]),
+                    Title = Convert.ToString(postRow["Title"]) ?? string.Empty,
+                    Description = Convert.ToString(postRow["Description"]) ?? string.Empty,
+                    UserID = Convert.ToInt32(postRow["UserID"]),
+                    CategoryID = Convert.ToInt32(postRow["CategoryID"]),
+                    CreatedAt = Convert.ToDateTime(postRow["CreatedAt"]),
+                    UpdatedAt = Convert.ToDateTime(postRow["UpdatedAt"]),
+                    LikeCount = Convert.ToInt32(postRow["LikeCount"])
                 };
             }
 
             return null;
         }
 
-        public Collection<Post> GetPostsByCategoryId(int categoryId, int page, int pageSize)
+        public Collection<Post> GetPostsByCategoryId(int categoryId, int pageNumber, int pageSize)
         {
-            if (categoryId <= 0)
+            if (categoryId <= INVALID_ID)
             {
                 throw new ArgumentException("Invalid category ID.");
             }
 
-            if (page <= 0)
+            if (pageNumber <= INVALID_ID)
             {
                 throw new ArgumentException("Page number must be greater than 0.");
             }
 
-            if (pageSize <= 0)
+            if (pageSize <= INVALID_ID)
             {
                 throw new ArgumentException("Page size must be greater than 0.");
             }
 
-            int offset = (page - 1) * pageSize;
+            int offsetRows = (pageNumber - MIN_PAGE_NUMBER) * pageSize;
 
-            SqlParameter[] parameters = new SqlParameter[]
+            SqlParameter[] categoryParameters = new SqlParameter[]
             {
                 new SqlParameter("@CategoryID", categoryId),
                 new SqlParameter("@PageSize", pageSize),
-                new SqlParameter("@Offset", offset)
+                new SqlParameter("@Offset", offsetRows)
             };
 
-            DataTable dataTable = dataLink.ExecuteReader("GetPostsByCategory", parameters);
-            List<Post> posts = new List<Post>();
+            DataTable categoryPostsTable = _databaseConnection.ExecuteReader("GetPostsByCategory", categoryParameters);
+            List<Post> categoryPosts = new List<Post>();
 
-            foreach (DataRow row in dataTable.Rows)
+            foreach (DataRow postRow in categoryPostsTable.Rows)
             {
-                posts.Add(new Post
+                categoryPosts.Add(new Post
                 {
-                    Id = Convert.ToInt32(row["Id"]),
-                    Title = Convert.ToString(row["Title"]) ?? string.Empty,
-                    Description = Convert.ToString(row["Description"]) ?? string.Empty,
-                    UserID = Convert.ToInt32(row["UserID"]),
-                    CategoryID = Convert.ToInt32(row["CategoryID"]),
-                    CreatedAt = Convert.ToDateTime(row["CreatedAt"]),
-                    UpdatedAt = Convert.ToDateTime(row["UpdatedAt"]),
-                    LikeCount = Convert.ToInt32(row["LikeCount"])
+                    Id = Convert.ToInt32(postRow["Id"]),
+                    Title = Convert.ToString(postRow["Title"]) ?? string.Empty,
+                    Description = Convert.ToString(postRow["Description"]) ?? string.Empty,
+                    UserID = Convert.ToInt32(postRow["UserID"]),
+                    CategoryID = Convert.ToInt32(postRow["CategoryID"]),
+                    CreatedAt = Convert.ToDateTime(postRow["CreatedAt"]),
+                    UpdatedAt = Convert.ToDateTime(postRow["UpdatedAt"]),
+                    LikeCount = Convert.ToInt32(postRow["LikeCount"])
                 });
             }
 
-            return new Collection<Post>(posts);
+            return new Collection<Post>(categoryPosts);
         }
 
         public List<string> GetAllPostTitles()
         {
-            var titles = new List<string>();
+            var postTitles = new List<string>();
 
             try
             {
-                DataTable dataTable = dataLink.ExecuteReader("GetAllPostTitles", null);
+                DataTable titlesTable = _databaseConnection.ExecuteReader("GetAllPostTitles", null);
 
-                foreach (DataRow row in dataTable.Rows)
+                foreach (DataRow titleRow in titlesTable.Rows)
                 {
-                    titles.Add(row["Title"].ToString());
+                    postTitles.Add(titleRow["Title"].ToString());
                 }
 
-                return titles;
+                return postTitles;
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error getting post titles: {ex.Message}");
-                return titles;
+                return postTitles;
             }
         }
 
-        public List<Post> GetPostsByTitle(string title)
+        public List<Post> GetPostsByTitle(string searchTitle)
         {
-            SqlParameter[] parameters = new SqlParameter[]
+            SqlParameter[] titleParameters = new SqlParameter[]
             {
-                new SqlParameter("@Title", title)
+                new SqlParameter("@Title", searchTitle)
             };
 
             try
             {
-                DataTable dataTable = dataLink.ExecuteReader("GetPostsByTitle", parameters);
-                List<Post> posts = new List<Post>();
+                DataTable matchingPostsTable = _databaseConnection.ExecuteReader("GetPostsByTitle", titleParameters);
+                List<Post> matchingPosts = new List<Post>();
 
-                foreach (DataRow row in dataTable.Rows)
+                foreach (DataRow postRow in matchingPostsTable.Rows)
                 {
-                    posts.Add(new Post
+                    matchingPosts.Add(new Post
                     {
-                        Id = Convert.ToInt32(row["Id"]),
-                        Title = Convert.ToString(row["Title"]) ?? string.Empty,
-                        Description = Convert.ToString(row["Description"]) ?? string.Empty,
-                        UserID = Convert.ToInt32(row["UserID"]),
-                        CategoryID = Convert.ToInt32(row["CategoryID"]),
-                        CreatedAt = Convert.ToDateTime(row["CreatedAt"]),
-                        UpdatedAt = Convert.ToDateTime(row["UpdatedAt"]),
-                        LikeCount = Convert.ToInt32(row["LikeCount"])
+                        Id = Convert.ToInt32(postRow["Id"]),
+                        Title = Convert.ToString(postRow["Title"]) ?? string.Empty,
+                        Description = Convert.ToString(postRow["Description"]) ?? string.Empty,
+                        UserID = Convert.ToInt32(postRow["UserID"]),
+                        CategoryID = Convert.ToInt32(postRow["CategoryID"]),
+                        CreatedAt = Convert.ToDateTime(postRow["CreatedAt"]),
+                        UpdatedAt = Convert.ToDateTime(postRow["UpdatedAt"]),
+                        LikeCount = Convert.ToInt32(postRow["LikeCount"])
                     });
                 }
 
-                return posts;
+                return matchingPosts;
             }
             catch (Exception ex)
             {
@@ -246,19 +252,19 @@ namespace Duo.Repositories
 
         public int? GetUserIdByPostId(int postId)
         {
-            SqlParameter[] parameters = new SqlParameter[]
+            SqlParameter[] userIdParameters = new SqlParameter[]
             {
                 new SqlParameter("@PostId", postId)
             };
 
             try
             {
-                DataTable dataTable = dataLink.ExecuteReader("GetUserIdByPostId", parameters);
+                DataTable userDataTable = _databaseConnection.ExecuteReader("GetUserIdByPostId", userIdParameters);
 
-                if (dataTable.Rows.Count > 0)
+                if (userDataTable.Rows.Count > DEFAULT_COUNT)
                 {
-                    DataRow row = dataTable.Rows[0];
-                    return Convert.ToInt32(row["UserId"]);
+                    DataRow userRow = userDataTable.Rows[0];
+                    return Convert.ToInt32(userRow["UserId"]);
                 }
 
                 return null;
@@ -269,36 +275,36 @@ namespace Duo.Repositories
             }
         }
 
-        public List<Post> GetPostsByUserId(int userId, int page, int pageSize)
+        public List<Post> GetPostsByUserId(int userId, int pageNumber, int pageSize)
         {
-            SqlParameter[] parameters = new SqlParameter[]
+            SqlParameter[] userParameters = new SqlParameter[]
             {
                 new SqlParameter("@UserID", userId),
                 new SqlParameter("@PageSize", pageSize),
-                new SqlParameter("@Offset", page)
+                new SqlParameter("@Offset", pageNumber)
             };
 
             try
             {
-                DataTable dataTable = dataLink.ExecuteReader("GetPostsByUser", parameters);
-                List<Post> posts = new List<Post>();
+                DataTable userPostsTable = _databaseConnection.ExecuteReader("GetPostsByUser", userParameters);
+                List<Post> userPosts = new List<Post>();
 
-                foreach (DataRow row in dataTable.Rows)
+                foreach (DataRow postRow in userPostsTable.Rows)
                 {
-                    posts.Add(new Post
+                    userPosts.Add(new Post
                     {
-                        Id = Convert.ToInt32(row["Id"]),
-                        Title = Convert.ToString(row["Title"]) ?? string.Empty,
-                        Description = Convert.ToString(row["Description"]) ?? string.Empty,
-                        UserID = Convert.ToInt32(row["UserID"]),
-                        CategoryID = Convert.ToInt32(row["CategoryID"]),
-                        CreatedAt = Convert.ToDateTime(row["CreatedAt"]),
-                        UpdatedAt = Convert.ToDateTime(row["UpdatedAt"]),
-                        LikeCount = Convert.ToInt32(row["LikeCount"])
+                        Id = Convert.ToInt32(postRow["Id"]),
+                        Title = Convert.ToString(postRow["Title"]) ?? string.Empty,
+                        Description = Convert.ToString(postRow["Description"]) ?? string.Empty,
+                        UserID = Convert.ToInt32(postRow["UserID"]),
+                        CategoryID = Convert.ToInt32(postRow["CategoryID"]),
+                        CreatedAt = Convert.ToDateTime(postRow["CreatedAt"]),
+                        UpdatedAt = Convert.ToDateTime(postRow["UpdatedAt"]),
+                        LikeCount = Convert.ToInt32(postRow["LikeCount"])
                     });
                 }
 
-                return posts;
+                return userPosts;
             }
             catch (Exception ex)
             {
@@ -306,56 +312,54 @@ namespace Duo.Repositories
             }
         }
 
-        public List<Post> GetPostsByHashtags(List<string> hashtags, int page, int pageSize)
+        public List<Post> GetPostsByHashtags(List<string> hashtags, int pageNumber, int pageSize)
         {
-            if (hashtags == null || hashtags.Count == 0)
+            if (hashtags == null || hashtags.Count == DEFAULT_COUNT)
             {
-                return GetPaginatedPosts(page, pageSize);
+                return GetPaginatedPosts(pageNumber, pageSize);
             }
 
-            hashtags = hashtags
+            List<string> filteredHashtags = hashtags
                 .Where(h => !string.IsNullOrWhiteSpace(h))
                 .Select(h => h.Trim().ToLowerInvariant())
                 .ToList();
             
-            string hashtagsString = string.Join(",", hashtags);
-            int offset = (page - 1) * pageSize;
+            string hashtagsString = string.Join(",", filteredHashtags);
+            int offsetRows = (pageNumber - MIN_PAGE_NUMBER) * pageSize;
 
-            if (string.IsNullOrWhiteSpace(hashtagsString) || hashtags.Count == 0)
+            if (string.IsNullOrWhiteSpace(hashtagsString) || filteredHashtags.Count == DEFAULT_COUNT)
             {
-                
-                return GetPaginatedPosts(page, pageSize);
+                return GetPaginatedPosts(pageNumber, pageSize);
             }
 
-            SqlParameter[] parameters = new SqlParameter[]
+            SqlParameter[] hashtagParameters = new SqlParameter[]
             {
                 new SqlParameter("@Hashtags", hashtagsString),
                 new SqlParameter("@PageSize", pageSize),
-                new SqlParameter("@Offset", offset)
+                new SqlParameter("@Offset", offsetRows)
             };
 
             try
             {
+                DataTable hashtagPostsTable = _databaseConnection.ExecuteReader("GetByHashtags", hashtagParameters);
+                List<Post> hashtagPosts = new List<Post>();
 
-                DataTable dataTable = dataLink.ExecuteReader("GetByHashtags", parameters);
-                List<Post> posts = new List<Post>();
-
-                foreach (DataRow row in dataTable.Rows)
+                foreach (DataRow postRow in hashtagPostsTable.Rows)
                 {
-                    posts.Add(new Post
+                    hashtagPosts.Add(new Post
                     {
-                        Id = Convert.ToInt32(row["Id"]),
-                        Title = Convert.ToString(row["Title"]) ?? string.Empty,
-                        Description = Convert.ToString(row["Description"]) ?? string.Empty,
-                        UserID = Convert.ToInt32(row["UserID"]),
-                        CategoryID = Convert.ToInt32(row["CategoryID"]),
-                        CreatedAt = Convert.ToDateTime(row["CreatedAt"]),
-                        UpdatedAt = Convert.ToDateTime(row["UpdatedAt"]),
-                        LikeCount = Convert.ToInt32(row["LikeCount"])
+                        Id = Convert.ToInt32(postRow["Id"]),
+                        Title = Convert.ToString(postRow["Title"]) ?? string.Empty,
+                        Description = Convert.ToString(postRow["Description"]) ?? string.Empty,
+                        UserID = Convert.ToInt32(postRow["UserID"]),
+                        CategoryID = Convert.ToInt32(postRow["CategoryID"]),
+                        CreatedAt = Convert.ToDateTime(postRow["CreatedAt"]),
+                        UpdatedAt = Convert.ToDateTime(postRow["UpdatedAt"]),
+                        LikeCount = Convert.ToInt32(postRow["LikeCount"])
                     });
                 }
 
-                return posts;
+                return hashtagPosts;
             }
             catch (Exception ex)
             {
@@ -365,19 +369,19 @@ namespace Duo.Repositories
 
         public bool IncrementPostLikeCount(int postId)
         {
-            if (postId <= 0)
+            if (postId <= INVALID_ID)
             {
                 throw new ArgumentException("Invalid post ID.");
             }
 
-            SqlParameter[] parameters = new SqlParameter[]
+            SqlParameter[] likeParameters = new SqlParameter[]
             {
                 new SqlParameter("@PostID", postId)
             };
 
             try
             {
-                dataLink.ExecuteNonQuery("IncrementPostLikeCount", parameters);
+                _databaseConnection.ExecuteNonQuery("IncrementPostLikeCount", likeParameters);
                 return true;
             }
             catch (Exception ex)
@@ -386,47 +390,47 @@ namespace Duo.Repositories
             }
         }
 
-        public List<Post> GetPaginatedPosts(int page, int pageSize)
+        public List<Post> GetPaginatedPosts(int pageNumber, int pageSize)
         {
-            if (page <= 0)
+            if (pageNumber <= INVALID_ID)
             {
                 throw new ArgumentException("Page number must be greater than 0.");
             }
 
-            if (pageSize <= 0)
+            if (pageSize <= INVALID_ID)
             {
                 throw new ArgumentException("Page size must be greater than 0.");
             }
 
-            int offset = (page - 1) * pageSize;
+            int offsetRows = (pageNumber - MIN_PAGE_NUMBER) * pageSize;
 
-            SqlParameter[] parameters = new SqlParameter[]
+            SqlParameter[] paginationParameters = new SqlParameter[]
             {
                 new SqlParameter("@PageSize", pageSize),
-                new SqlParameter("@Offset", offset)
+                new SqlParameter("@Offset", offsetRows)
             };
 
             try
             {
-                DataTable dataTable = dataLink.ExecuteReader("GetPaginatedPosts", parameters);
-                List<Post> posts = new List<Post>();
+                DataTable paginatedPostsTable = _databaseConnection.ExecuteReader("GetPaginatedPosts", paginationParameters);
+                List<Post> paginatedPosts = new List<Post>();
 
-                foreach (DataRow row in dataTable.Rows)
+                foreach (DataRow postRow in paginatedPostsTable.Rows)
                 {
-                    posts.Add(new Post
+                    paginatedPosts.Add(new Post
                     {
-                        Id = Convert.ToInt32(row["Id"]),
-                        Title = Convert.ToString(row["Title"]) ?? string.Empty,
-                        Description = Convert.ToString(row["Description"]) ?? string.Empty,
-                        UserID = Convert.ToInt32(row["UserID"]),
-                        CategoryID = Convert.ToInt32(row["CategoryID"]),
-                        CreatedAt = Convert.ToDateTime(row["CreatedAt"]),
-                        UpdatedAt = Convert.ToDateTime(row["UpdatedAt"]),
-                        LikeCount = Convert.ToInt32(row["LikeCount"])
+                        Id = Convert.ToInt32(postRow["Id"]),
+                        Title = Convert.ToString(postRow["Title"]) ?? string.Empty,
+                        Description = Convert.ToString(postRow["Description"]) ?? string.Empty,
+                        UserID = Convert.ToInt32(postRow["UserID"]),
+                        CategoryID = Convert.ToInt32(postRow["CategoryID"]),
+                        CreatedAt = Convert.ToDateTime(postRow["CreatedAt"]),
+                        UpdatedAt = Convert.ToDateTime(postRow["UpdatedAt"]),
+                        LikeCount = Convert.ToInt32(postRow["LikeCount"])
                     });
                 }
 
-                return posts;
+                return paginatedPosts;
             }
             catch (Exception ex)
             {
@@ -438,8 +442,8 @@ namespace Duo.Repositories
         {
             try
             {
-                object result = dataLink.ExecuteScalar<int>("GetTotalPostCount");
-                return result != null ? Convert.ToInt32(result) : 0;
+                object totalCountResult = _databaseConnection.ExecuteScalar<int>("GetTotalPostCount");
+                return totalCountResult != null ? Convert.ToInt32(totalCountResult) : DEFAULT_COUNT;
             }
             catch (Exception ex)
             {
@@ -449,20 +453,20 @@ namespace Duo.Repositories
 
         public int GetPostCountByCategory(int categoryId)
         {
-            if (categoryId <= 0)
+            if (categoryId <= INVALID_ID)
             {
                 throw new ArgumentException("Invalid category ID.");
             }
 
-            SqlParameter[] parameters = new SqlParameter[]
+            SqlParameter[] categoryParameters = new SqlParameter[]
             {
                 new SqlParameter("@CategoryID", categoryId)
             };
 
             try
             {
-                object result = dataLink.ExecuteScalar<int>("GetPostCountByCategory", parameters);
-                return result != null ? Convert.ToInt32(result) : 0;
+                object categoryCountResult = _databaseConnection.ExecuteScalar<int>("GetPostCountByCategory", categoryParameters);
+                return categoryCountResult != null ? Convert.ToInt32(categoryCountResult) : DEFAULT_COUNT;
             }
             catch (Exception ex)
             {
@@ -472,39 +476,36 @@ namespace Duo.Repositories
 
         public int GetPostCountByHashtags(List<string> hashtags)
         {
-            if (hashtags == null || hashtags.Count == 0)
+            if (hashtags == null || hashtags.Count == DEFAULT_COUNT)
             {
                 return GetTotalPostCount();
             }
 
-            hashtags = hashtags
+            List<string> filteredHashtags = hashtags
                 .Where(h => !string.IsNullOrWhiteSpace(h))
                 .Select(h => h.Trim().ToLowerInvariant())
                 .ToList();
-            
-            string hashtagsString = string.Join(",", hashtags);
 
-            if (string.IsNullOrWhiteSpace(hashtagsString) || hashtags.Count == 0)
+            if (filteredHashtags.Count == DEFAULT_COUNT)
             {
-                
                 return GetTotalPostCount();
             }
 
-            SqlParameter[] parameters = new SqlParameter[]
+            string hashtagsString = string.Join(",", filteredHashtags);
+
+            SqlParameter[] hashtagParameters = new SqlParameter[]
             {
                 new SqlParameter("@Hashtags", hashtagsString)
             };
 
             try
             {
-                object result = dataLink.ExecuteScalar<int>("GetPostCountByHashtags", parameters);
-                int count = result != null ? Convert.ToInt32(result) : 0;
-                
-                return count;
+                object hashtagCountResult = _databaseConnection.ExecuteScalar<int>("GetPostCountByHashtags", hashtagParameters);
+                return hashtagCountResult != null ? Convert.ToInt32(hashtagCountResult) : DEFAULT_COUNT;
             }
             catch (Exception ex)
             {
-                throw new Exception($"GetPostCountByHashtags: {ex.Message}", ex);
+                throw new Exception($"GetPostCountByHashtags: {ex.Message}");
             }
         }
     }

@@ -20,6 +20,13 @@ namespace Duo.ViewModels
         private readonly PostService _postService;
         private readonly CommentService _commentService;
         private readonly UserService _userService;
+        
+        // Constants for validation and defaults
+        private const int INVALID_ID = 0;
+        private const int TOP_LEVEL_COMMENT = 1;
+        private const string UNKNOWN_USER = "Unknown User";
+        private const string UNKNOWN_DATE = "Unknown date";
+        
         private Models.Post _post;
         private ObservableCollection<CommentViewModel> _commentViewModels;
         private ObservableCollection<Models.Comment> _comments;
@@ -111,7 +118,6 @@ namespace Duo.ViewModels
 
         private void GoBack()
         {
-            // This is a placeholder - actual navigation will be handled in the view
         }
 
         private void CommentCreationViewModel_CommentSubmitted(object sender, EventArgs e)
@@ -123,14 +129,14 @@ namespace Duo.ViewModels
             }
         }
 
-        public void LoadPostDetails(int postId)
+        private void LoadPostDetails(int postId)
         {
             IsLoading = true;
             ErrorMessage = string.Empty;
 
             try
             {
-                if (postId <= 0)
+                if (postId <= INVALID_ID)
                 {
                     throw new ArgumentException("Invalid post ID", nameof(postId));
                 }
@@ -144,66 +150,66 @@ namespace Duo.ViewModels
                     };
                 }
 
-                var post = _postService.GetPostById(postId);
-                if (post != null)
+                var requestedPost = _postService.GetPostById(postId);
+                if (requestedPost != null)
                 {
-                    if (post.Id <= 0)
+                    if (requestedPost.Id <= INVALID_ID)
                     {
-                        post.Id = postId;
+                        requestedPost.Id = postId;
                     }
 
-                    if (post.Hashtags == null)
+                    if (requestedPost.Hashtags == null)
                     {
-                        post.Hashtags = new List<string>();
-                    }
-
-                    try 
-                    {
-                        var user = _userService.GetUserById(post.UserID);
-                        post.Username = $"{user?.Username ?? "Unknown User"}";
-                    }
-                    catch (Exception userEx)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"Error getting user: {userEx.Message}");
-                        post.Username = "Unknown User";
-                    }
-
-                    try
-                    {
-                        if (string.IsNullOrEmpty(post.Date) && post.CreatedAt != default)
-                        {
-                            DateTime localCreatedAt = Helpers.DateTimeHelper.ConvertUtcToLocal(post.CreatedAt);
-                            post.Date = FormatDate(localCreatedAt);
-                        }
-                    }
-                    catch (Exception dateEx)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"Error formatting date: {dateEx.Message}");
-                        post.Date = "Unknown date";
+                        requestedPost.Hashtags = new List<string>();
                     }
 
                     try 
                     {
-                        var hashtags = _postService.GetHashtagsByPostId(post.Id);
-                        if (hashtags != null && hashtags.Any())
-                        {
-                            post.Hashtags = hashtags.Select(h => h.Name ?? h.Tag).ToList();
-                        }
+                        var postAuthor = _userService.GetUserById(requestedPost.UserID);
+                        requestedPost.Username = $"{postAuthor?.Username ?? UNKNOWN_USER}";
                     }
-                    catch (Exception hashtagEx)
+                    catch (Exception userException)
                     {
-                        System.Diagnostics.Debug.WriteLine($"Error loading hashtags: {hashtagEx.Message}");
-                        post.Hashtags = new List<string>();
+                        System.Diagnostics.Debug.WriteLine($"Error getting user: {userException.Message}");
+                        requestedPost.Username = UNKNOWN_USER;
                     }
 
                     try
                     {
-                        Post = post;
-                        LoadComments(post.Id);
+                        if (string.IsNullOrEmpty(requestedPost.Date) && requestedPost.CreatedAt != default)
+                        {
+                            DateTime localCreatedAt = Helpers.DateTimeHelper.ConvertUtcToLocal(requestedPost.CreatedAt);
+                            requestedPost.Date = FormatDate(localCreatedAt);
+                        }
                     }
-                    catch (Exception uiEx)
+                    catch (Exception dateException)
                     {
-                        System.Diagnostics.Debug.WriteLine($"Error updating UI: {uiEx.Message}");
+                        System.Diagnostics.Debug.WriteLine($"Error formatting date: {dateException.Message}");
+                        requestedPost.Date = UNKNOWN_DATE;
+                    }
+
+                    try 
+                    {
+                        var postHashtags = _postService.GetHashtagsByPostId(requestedPost.Id);
+                        if (postHashtags != null && postHashtags.Any())
+                        {
+                            requestedPost.Hashtags = postHashtags.Select(hashtag => hashtag.Name ?? hashtag.Tag).ToList();
+                        }
+                    }
+                    catch (Exception hashtagException)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Error loading hashtags: {hashtagException.Message}");
+                        requestedPost.Hashtags = new List<string>();
+                    }
+
+                    try
+                    {
+                        Post = requestedPost;
+                        LoadComments(requestedPost.Id);
+                    }
+                    catch (Exception uiException)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Error updating UI: {uiException.Message}");
                         ErrorMessage = "Error displaying post details";
                     }
                 }
@@ -227,40 +233,40 @@ namespace Duo.ViewModels
         {
             try
             {
-                if (postId <= 0)
+                if (postId <= INVALID_ID)
                 {
                     throw new ArgumentException("Invalid post ID", nameof(postId));
                 }
 
-                var comments = _commentService.GetCommentsByPostId(postId);
+                var postComments = _commentService.GetCommentsByPostId(postId);
 
                 Comments.Clear();
                 CommentViewModels.Clear();
 
-                if (comments != null && comments.Any())
+                if (postComments != null && postComments.Any())
                 {
                     HasComments = true;
 
-                    foreach (var comment in comments)
+                    foreach (var comment in postComments)
                     {
                         Comments.Add(comment);
                     }
 
-                    var topLevelComments = comments.Where(c => c.ParentCommentId == null).ToList();
+                    var topLevelComments = postComments.Where(comment => comment.ParentCommentId == null).ToList();
                     
-                    var repliesByParentId = comments
-                                        .Where(c => c.ParentCommentId.HasValue)
-                                        .GroupBy(c => c.ParentCommentId.Value)
-                                        .ToDictionary(g => g.Key, g => g.ToList());
+                    var repliesByParentId = postComments
+                                        .Where(comment => comment.ParentCommentId.HasValue)
+                                        .GroupBy(comment => comment.ParentCommentId.Value)
+                                        .ToDictionary(group => group.Key, group => group.ToList());
 
                     foreach (var comment in topLevelComments)
                     {
-                        comment.Level = 1;
+                        comment.Level = TOP_LEVEL_COMMENT;
                     }
 
                     foreach (var parentId in repliesByParentId.Keys)
                     {
-                        var parentComment = comments.FirstOrDefault(c => c.Id == parentId);
+                        var parentComment = postComments.FirstOrDefault(comment => comment.Id == parentId);
                         if (parentComment != null)
                         {
                             foreach (var reply in repliesByParentId[parentId])
@@ -299,7 +305,7 @@ namespace Duo.ViewModels
 
         private void AddComment(string commentText)
         {
-            if (string.IsNullOrWhiteSpace(commentText) || Post == null || Post.Id <= 0)
+            if (string.IsNullOrWhiteSpace(commentText) || Post == null || Post.Id <= INVALID_ID)
                 return;
 
             try
@@ -324,7 +330,7 @@ namespace Duo.ViewModels
 
         public void DeleteComment(int commentId)
          {
-             if (commentId <= 0 || Post == null || Post.Id <= 0)
+             if (commentId <= INVALID_ID || Post == null || Post.Id <= INVALID_ID)
                  return;
 
              try
@@ -352,14 +358,13 @@ namespace Duo.ViewModels
 
         public void AddReplyToComment(int parentCommentId, string replyText)
         {
-            if (string.IsNullOrWhiteSpace(replyText) || Post == null || Post.Id <= 0 || parentCommentId <= 0)
+            if (string.IsNullOrWhiteSpace(replyText) || Post == null || Post.Id <= INVALID_ID || parentCommentId <= INVALID_ID)
                 return;
 
             try
             {
                 string replySignature = $"{parentCommentId}_{replyText}";
 
-                // Check for duplicate comments
                 bool isDuplicate = false;
                 foreach (var comment in Comments)
                 {
@@ -395,20 +400,17 @@ namespace Duo.ViewModels
 
         private string FormatDate(DateTime date)
         {
-            // This method assumes date is already in local time
             return date.ToString("MMM dd, yyyy HH:mm");
         }
 
         public CommentViewModel FindCommentById(int commentId)
         {
-            // First, check top-level comments
             var comment = CommentViewModels.FirstOrDefault(c => c.Id == commentId);
             if (comment != null)
             {
                 return comment;
             }
             
-            // If not found in top-level, recursively search through replies
             foreach (var topLevelComment in CommentViewModels)
             {
                 var foundInReplies = FindCommentInReplies(topLevelComment.Replies, commentId);
@@ -425,12 +427,10 @@ namespace Duo.ViewModels
         {
             try
             {
-                // Call the service to persist the like to the database
                 bool success = _commentService.LikeComment(commentId);
                 
                 if (success)
                 {
-                    // Update the UI via the view model
                     var commentViewModel = FindCommentById(commentId);
                     if (commentViewModel != null)
                     {

@@ -8,7 +8,7 @@ using Duo.Models;
 
 namespace Duo.Repositories.Interfaces
 {
-    internal interface IPostRepository
+    public interface IPostRepository
     {
         public int CreatePost(Post post);
 
