@@ -129,7 +129,7 @@ namespace Duo.ViewModels
             }
         }
 
-        private void LoadPostDetails(int postId)
+        public void LoadPostDetails(int postId)
         {
             IsLoading = true;
             ErrorMessage = string.Empty;
