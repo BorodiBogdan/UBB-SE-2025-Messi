@@ -6,14 +6,15 @@ using System.Linq;
 using Microsoft.Data.SqlClient;
 using Duo.Models;
 using Duo.Data;
+using Duo.Repositories.Interfaces;
 
 namespace Duo.Repositories
 {
-    public class PostRepository
+    public class PostRepository : IPostRepository
     {
-        private readonly DataLink dataLink;
+        private readonly IDatabaseConnection dataLink;
 
-        public PostRepository(DataLink dataLink)
+        public PostRepository(IDatabaseConnection dataLink)
         {
             this.dataLink = dataLink ?? throw new ArgumentNullException(nameof(dataLink));
         }
@@ -49,19 +50,9 @@ namespace Duo.Repositories
             try
             {
                 int? result = dataLink.ExecuteScalar<int>("CreatePost", parameters);
-                
-                if (result.HasValue)
-                {      
-                    return result.Value;
-                }
-                else
-                {
-                    return 0;
-                }
-            }
-            catch (SqlException ex)
-            {
-                throw new Exception($"Database error: {ex.Message}");
+
+                return result.Value;
+
             }
             catch (Exception ex)
             {
@@ -389,7 +380,7 @@ namespace Duo.Repositories
                 dataLink.ExecuteNonQuery("IncrementPostLikeCount", parameters);
                 return true;
             }
-            catch (SqlException ex)
+            catch (Exception ex)
             {
                 throw new Exception(ex.Message);
             }
