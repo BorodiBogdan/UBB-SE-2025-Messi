@@ -10,10 +10,10 @@ namespace Duo.Repositories
 {
     public class UserRepository
     {
-        private readonly DataLink dataLink;
-        public UserRepository(DataLink dataLink)
+        private readonly IDatabaseConnection dataLink;
+        public UserRepository(IDatabaseConnection dataLink)
         {
-            this.dataLink = dataLink;
+            this.dataLink = dataLink ?? throw new ArgumentNullException(nameof(dataLink));
         }
         public int CreateUser(User user)
         {

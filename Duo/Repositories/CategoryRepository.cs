@@ -12,9 +12,9 @@ namespace Duo.Repositories
     {
         private readonly IDatabaseConnection _dataLink;
 
-        public CategoryRepository(DataLink dataLink)
+        public CategoryRepository(IDatabaseConnection dataLink)
         {
-            _dataLink = dataLink;
+            _dataLink = dataLink ?? throw new ArgumentNullException(nameof(dataLink));
         }
 
         public List<Category> GetCategories()
