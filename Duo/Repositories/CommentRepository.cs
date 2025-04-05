@@ -36,9 +36,6 @@ namespace Duo.Repositories
                 if (dataTable.Rows.Count == 0)
                     throw new Exception("Comment not found");
 
-                if (dataTable.Columns.Count < 8)
-                    throw new Exception("Invalid data structure returned from database");
-
                 var row = dataTable.Rows[0];
                 return new Comment(
                     Convert.ToInt32(row[0]),
@@ -76,34 +73,20 @@ namespace Duo.Repositories
             {
                 dataTable = _dataLink.ExecuteReader("GetCommentsByPostID", parameters);
 
-                if (dataTable.Columns.Count < 8)
-                {
-                    
-                    throw new Exception("Invalid data structure returned from database");
-                }
-
                 foreach (DataRow row in dataTable.Rows)
-                {
-                    try
-                    {
-                        int commentId = Convert.ToInt32(row[0]);
-                        Comment comment = new Comment(
-                            commentId,
-                            row[1]?.ToString() ?? string.Empty,
-                            Convert.ToInt32(row[2]),
-                            Convert.ToInt32(row[3]),
-                            row[4] == DBNull.Value ? null : Convert.ToInt32(row[4]),
-                            Convert.ToDateTime(row[5]),
-                            Convert.ToInt32(row[7]),
-                            Convert.ToInt32(row[6])
-                        );
-                        comments.Add(comment);
-                        
-                    }
-                    catch (Exception ex)
-                    {
-                        throw new Exception(ex.Message);
-                    }
+                {           
+                    int commentId = Convert.ToInt32(row[0]);
+                    Comment comment = new Comment(
+                        commentId,
+                        row[1]?.ToString() ?? string.Empty,
+                        Convert.ToInt32(row[2]),
+                        Convert.ToInt32(row[3]),
+                        row[4] == DBNull.Value ? null : Convert.ToInt32(row[4]),
+                        Convert.ToDateTime(row[5]),
+                        Convert.ToInt32(row[7]),
+                        Convert.ToInt32(row[6])
+                    );
+                    comments.Add(comment);                   
                 }
                 
                 return comments;
@@ -141,8 +124,6 @@ namespace Duo.Repositories
             try
             {
                 int? result = _dataLink.ExecuteScalar<int>("CreateComment", parameters);
-                if (result == null)
-                    throw new Exception("Failed to create comment");
 
                 comment.Id = result.Value;
                 return result.Value;
@@ -187,8 +168,6 @@ namespace Duo.Repositories
             try
             {
                 dataTable = _dataLink.ExecuteReader("GetReplies", parameters);
-                if (dataTable.Columns.Count < 8)
-                    throw new Exception("Invalid data structure returned from database");
 
                 foreach (DataRow row in dataTable.Rows)
                 {
@@ -248,8 +227,7 @@ namespace Duo.Repositories
             try
             {
                 int? result = _dataLink.ExecuteScalar<int>("GetCommentsCountForPost", parameters);
-                if (result == null)
-                    throw new Exception("Failed to get comment count");
+
                 return result.Value;
             }
             catch (SqlException ex)

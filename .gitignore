@@ -371,3 +371,4 @@ onnx-models
 coverage_html
 coverage_report
 coverage_summary
+test_result
