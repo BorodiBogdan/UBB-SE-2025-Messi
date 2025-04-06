@@ -51,7 +51,7 @@ namespace Duo
             _postRepository = new PostRepository(_dataLink);
             _hashtagRepository = new HashtagRepository(_dataLink);
             _commentRepository = new CommentRepository(_dataLink);
-            var categoryRepository = new CategoryRepository(_dataLink);
+            CategoryRepository categoryRepository = new CategoryRepository(_dataLink);
 
             userService = new UserService(userRepository);
             _searchService = new SearchService();
