@@ -40,14 +40,7 @@ namespace Duo.ViewModels
 
         public void LoadCategories()
         {
-            try
-            {
                 Categories = _categoryService.GetAllCategories();
-            }
-            catch (Exception ex)
-            {
-                Categories = new List<Category>();
-            }
         }
 
         public List<string> GetCategoryNames()
