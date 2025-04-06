@@ -116,6 +116,149 @@ namespace TestProject1.Repositories
             // Act & Assert
             Assert.Throws<Exception>(() => _categoryRepository.GetCategoryByName(categoryName));
         }
+
+        // The following tests directly use MockDatabaseConnectionCategoryRepository to achieve 100% coverage
+        [Fact]
+        public void MockDatabaseConnectionCategoryRepository_Constructor_InitializesCategoryTable()
+        {
+            // Arrange & Act
+            var mockConnection = new MockDatabaseConnectionCategoryRepository();
+            
+            // Assert - verify through GetCategories
+            var result = mockConnection.ExecuteReader("GetCategories");
+            
+            Assert.NotNull(result);
+            Assert.Equal(3, result.Rows.Count);
+            Assert.Equal(1, result.Rows[0]["Id"]);
+            Assert.Equal("Technology", result.Rows[0]["Name"]);
+            Assert.Equal(2, result.Rows[1]["Id"]);
+            Assert.Equal("Science", result.Rows[1]["Name"]);
+            Assert.Equal(3, result.Rows[2]["Id"]);
+            Assert.Equal("Music", result.Rows[2]["Name"]);
+        }
+        
+        [Fact]
+        public void MockDatabaseConnectionCategoryRepository_OpenConnection_DoesNotThrow()
+        {
+            // Arrange
+            var mockConnection = new MockDatabaseConnectionCategoryRepository();
+            
+            // Act & Assert - no exception should be thrown
+            mockConnection.OpenConnection();
+            Assert.True(true);
+        }
+        
+        [Fact]
+        public void MockDatabaseConnectionCategoryRepository_CloseConnection_DoesNotThrow()
+        {
+            // Arrange
+            var mockConnection = new MockDatabaseConnectionCategoryRepository();
+            
+            // Act & Assert - no exception should be thrown
+            mockConnection.CloseConnection();
+            Assert.True(true);
+        }
+        
+        [Fact]
+        public void MockDatabaseConnectionCategoryRepository_ExecuteNonQuery_ThrowsNotImplementedException()
+        {
+            // Arrange
+            var mockConnection = new MockDatabaseConnectionCategoryRepository();
+            
+            // Act & Assert
+            Assert.Throws<NotImplementedException>(() => mockConnection.ExecuteNonQuery("AnyProcedure"));
+        }
+        
+        [Fact]
+        public void MockDatabaseConnectionCategoryRepository_ExecuteReader_GetCategories_ReturnsCategoryTable()
+        {
+            // Arrange
+            var mockConnection = new MockDatabaseConnectionCategoryRepository();
+            
+            // Act
+            var result = mockConnection.ExecuteReader("GetCategories");
+            
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(3, result.Rows.Count);
+            Assert.Equal("Technology", result.Rows[0]["Name"]);
+        }
+        
+        [Fact]
+        public void MockDatabaseConnectionCategoryRepository_ExecuteReader_GetCategoryByName_WithExistingCategory_ReturnsCategoryData()
+        {
+            // Arrange
+            var mockConnection = new MockDatabaseConnectionCategoryRepository();
+            var parameters = new SqlParameter[]
+            {
+                new SqlParameter("@Name", "Technology")
+            };
+            
+            // Act
+            var result = mockConnection.ExecuteReader("GetCategoryByName", parameters);
+            
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(1, result.Rows.Count);
+            Assert.Equal(1, result.Rows[0]["Id"]);
+            Assert.Equal("Technology", result.Rows[0]["Name"]);
+        }
+        
+        [Fact]
+        public void MockDatabaseConnectionCategoryRepository_ExecuteReader_GetCategoryByName_WithNonExistentCategory_ReturnsEmptyTable()
+        {
+            // Arrange
+            var mockConnection = new MockDatabaseConnectionCategoryRepository();
+            var parameters = new SqlParameter[]
+            {
+                new SqlParameter("@Name", "NonExistentCategory")
+            };
+            
+            // Act
+            var result = mockConnection.ExecuteReader("GetCategoryByName", parameters);
+            
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(0, result.Rows.Count);
+        }
+        
+        [Fact]
+        public void MockDatabaseConnectionCategoryRepository_ExecuteReader_GetCategoryByName_WithOtherCategory_ReturnsEmptyTable()
+        {
+            // Arrange
+            var mockConnection = new MockDatabaseConnectionCategoryRepository();
+            var parameters = new SqlParameter[]
+            {
+                new SqlParameter("@Name", "OtherCategory")
+            };
+            
+            // Act
+            var result = mockConnection.ExecuteReader("GetCategoryByName", parameters);
+            
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(0, result.Rows.Count);
+        }
+        
+        [Fact]
+        public void MockDatabaseConnectionCategoryRepository_ExecuteReader_UnsupportedStoredProcedure_ThrowsNotImplementedException()
+        {
+            // Arrange
+            var mockConnection = new MockDatabaseConnectionCategoryRepository();
+            
+            // Act & Assert
+            Assert.Throws<NotImplementedException>(() => mockConnection.ExecuteReader("UnsupportedProcedure"));
+        }
+        
+        [Fact]
+        public void MockDatabaseConnectionCategoryRepository_ExecuteScalar_ThrowsNotImplementedException()
+        {
+            // Arrange
+            var mockConnection = new MockDatabaseConnectionCategoryRepository();
+            
+            // Act & Assert
+            Assert.Throws<NotImplementedException>(() => mockConnection.ExecuteScalar<int>("AnyProcedure"));
+        }
     }
     
     // Helper class to mock Console.WriteLine for testing

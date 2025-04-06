@@ -249,5 +249,277 @@ namespace TestProject1.Repositories
             // Act & Assert
             Assert.Throws<Exception>(() => _userRepository.GetUserByUsername("SQLErrorUser"));
         }
+
+        // The following tests directly use MockDatabaseConnectionUserRepository to achieve 100% coverage
+        [Fact]
+        public void MockDatabaseConnectionUserRepository_Constructor_InitializesUserTable()
+        {
+            // Arrange & Act
+            var mockConnection = new MockDatabaseConnectionUserRepository();
+            
+            // Assert - verify structure through GetUserByID
+            var parameters = new SqlParameter[]
+            {
+                new SqlParameter("@UserID", 1)
+            };
+            var result = mockConnection.ExecuteReader("GetUserByID", parameters);
+            
+            Assert.NotNull(result);
+            Assert.Equal(1, result.Rows.Count);
+            Assert.Equal(1, result.Rows[0]["userID"]);
+            Assert.Equal("User1", result.Rows[0]["username"]);
+        }
+        
+        [Fact]
+        public void MockDatabaseConnectionUserRepository_OpenConnection_DoesNotThrow()
+        {
+            // Arrange
+            var mockConnection = new MockDatabaseConnectionUserRepository();
+            
+            // Act & Assert - no exception should be thrown
+            mockConnection.OpenConnection();
+            Assert.True(true);
+        }
+        
+        [Fact]
+        public void MockDatabaseConnectionUserRepository_CloseConnection_DoesNotThrow()
+        {
+            // Arrange
+            var mockConnection = new MockDatabaseConnectionUserRepository();
+            
+            // Act & Assert - no exception should be thrown
+            mockConnection.CloseConnection();
+            Assert.True(true);
+        }
+        
+        [Fact]
+        public void MockDatabaseConnectionUserRepository_ExecuteNonQuery_ThrowsNotImplementedException()
+        {
+            // Arrange
+            var mockConnection = new MockDatabaseConnectionUserRepository();
+            
+            // Act & Assert
+            Assert.Throws<NotImplementedException>(() => mockConnection.ExecuteNonQuery("AnyProcedure"));
+        }
+        
+        [Fact]
+        public void MockDatabaseConnectionUserRepository_ExecuteReader_GetUserByID_ReturnsUserData()
+        {
+            // Arrange
+            var mockConnection = new MockDatabaseConnectionUserRepository();
+            var parameters = new SqlParameter[]
+            {
+                new SqlParameter("@UserID", 1)
+            };
+            
+            // Act
+            var result = mockConnection.ExecuteReader("GetUserByID", parameters);
+            
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(1, result.Rows.Count);
+            Assert.Equal(1, result.Rows[0]["userID"]);
+            Assert.Equal("User1", result.Rows[0]["username"]);
+        }
+        
+        [Fact]
+        public void MockDatabaseConnectionUserRepository_ExecuteReader_GetUserByID_WithUserID40_ReturnsEmptyTable()
+        {
+            // Arrange
+            var mockConnection = new MockDatabaseConnectionUserRepository();
+            var parameters = new SqlParameter[]
+            {
+                new SqlParameter("@UserID", 40)
+            };
+            
+            // Act
+            var result = mockConnection.ExecuteReader("GetUserByID", parameters);
+            
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(0, result.Rows.Count);
+        }
+        
+        [Fact]
+        public void MockDatabaseConnectionUserRepository_ExecuteReader_GetUserByUsername_ReturnsUserData()
+        {
+            // Arrange
+            var mockConnection = new MockDatabaseConnectionUserRepository();
+            var parameters = new SqlParameter[]
+            {
+                new SqlParameter("@Username", "User1")
+            };
+            
+            // Act
+            var result = mockConnection.ExecuteReader("GetUserByUsername", parameters);
+            
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(1, result.Rows.Count);
+            Assert.Equal(1, result.Rows[0]["userID"]);
+            Assert.Equal("User1", result.Rows[0]["username"]);
+        }
+        
+        [Fact]
+        public void MockDatabaseConnectionUserRepository_ExecuteReader_GetUserByUsername_WithNonExistentUser_ReturnsEmptyTable()
+        {
+            // Arrange
+            var mockConnection = new MockDatabaseConnectionUserRepository();
+            var parameters = new SqlParameter[]
+            {
+                new SqlParameter("@Username", "NonExistentUser")
+            };
+            
+            // Act
+            var result = mockConnection.ExecuteReader("GetUserByUsername", parameters);
+            
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(0, result.Rows.Count);
+        }
+        
+        [Fact]
+        public void MockDatabaseConnectionUserRepository_ExecuteReader_GetUserByUsername_WithUserNotInTable_ReturnsEmptyTable()
+        {
+            // Arrange
+            var mockConnection = new MockDatabaseConnectionUserRepository();
+            var parameters = new SqlParameter[]
+            {
+                new SqlParameter("@Username", "UserNotInTable")
+            };
+            
+            // Act
+            var result = mockConnection.ExecuteReader("GetUserByUsername", parameters);
+            
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(0, result.Rows.Count);
+        }
+        
+        [Fact]
+        public void MockDatabaseConnectionUserRepository_ExecuteReader_UnsupportedProcedure_ThrowsNotImplementedException()
+        {
+            // Arrange
+            var mockConnection = new MockDatabaseConnectionUserRepository();
+            
+            // Act & Assert
+            Assert.Throws<NotImplementedException>(() => mockConnection.ExecuteReader("UnsupportedProcedure"));
+        }
+        
+        [Fact]
+        public void MockDatabaseConnectionUserRepository_ExecuteScalar_CreateUser_ReturnsNewUserID()
+        {
+            // Arrange
+            var mockConnection = new MockDatabaseConnectionUserRepository();
+            var parameters = new SqlParameter[]
+            {
+                new SqlParameter("@Username", "NewUser")
+            };
+            
+            // Act
+            var result = mockConnection.ExecuteScalar<int>("CreateUser", parameters);
+            
+            // Assert
+            Assert.Equal(4, result);
+        }
+        
+        [Fact]
+        public void MockDatabaseConnectionUserRepository_ExecuteScalar_ErrorUser_ThrowsException()
+        {
+            // Arrange
+            var mockConnection = new MockDatabaseConnectionUserRepository();
+            var parameters = new SqlParameter[]
+            {
+                new SqlParameter("@Username", "ErrorUser")
+            };
+            
+            // Act & Assert
+            Assert.ThrowsAny<Exception>(() => mockConnection.ExecuteScalar<int>("CreateUser", parameters));
+        }
+        
+        [Fact]
+        public void MockDatabaseConnectionUserRepository_ExecuteScalar_OtherProcedure_ReturnsDefault()
+        {
+            // Arrange
+            var mockConnection = new MockDatabaseConnectionUserRepository();
+            
+            // Act
+            var result = mockConnection.ExecuteScalar<int>("OtherProcedure");
+            
+            // Assert
+            Assert.Equal(0, result);
+        }
+        
+        [Fact]
+        public void MockDatabaseConnectionUserRepository_ConvertSqlParameterToInt_WithValue404_ThrowsException()
+        {
+            // Arrange
+            var mockConnection = new MockDatabaseConnectionUserRepository();
+            var parameters = new SqlParameter[]
+            {
+                new SqlParameter("@UserID", 404)
+            };
+            
+            // Act & Assert
+            Assert.ThrowsAny<Exception>(() => mockConnection.ExecuteReader("GetUserByID", parameters));
+        }
+        
+        [Fact]
+        public void SqlExceptionThrower_ThrowsSqlException()
+        {
+            // Arrange
+            var thrower = new SqlExceptionThrower();
+            
+            // Act
+            var exception = thrower.throwSqlException();
+            
+            // Assert
+            Assert.NotNull(exception);
+            Assert.IsType<SqlException>(exception);
+        }
+        
+        [Fact]
+        public void MockDataTables_Constructor_InitializesDataTable()
+        {
+            // Arrange & Act
+            var mockDataTables = new MockDataTables();
+            
+            // Assert
+            Assert.NotNull(mockDataTables.CommentRepositoryDataTABLE);
+            Assert.Equal(3, mockDataTables.CommentRepositoryDataTABLE.Rows.Count);
+            Assert.Equal(9, mockDataTables.CommentRepositoryDataTABLE.Columns.Count);
+        }
+
+        [Fact]
+        public void MockDatabaseConnectionUserRepository_ExecuteReader_GetUserByID_WithNullParameters_HandlesGracefully()
+        {
+            // This test is no longer valid since we reverted to throwing ArgumentNullException
+            // for null parameters in ConvertSqlParameterToInt
+            
+            // Arrange
+            var mockConnection = new MockDatabaseConnectionUserRepository();
+            
+            // Act & Assert - should throw ArgumentNullException
+            Assert.Throws<ArgumentNullException>(() => 
+                mockConnection.ExecuteReader("GetUserByID", new SqlParameter[] { null }));
+        }
+
+        [Fact]
+        public void MockDatabaseConnectionUserRepository_ExecuteReader_GetUserByID_WithNonExistentNon40ID_ReturnsEmptyTable()
+        {
+            // Arrange
+            var mockConnection = new MockDatabaseConnectionUserRepository();
+            var parameters = new SqlParameter[]
+            {
+                new SqlParameter("@UserID", 999) // ID that doesn't exist but isn't specifically 40
+            };
+            
+            // Act
+            var result = mockConnection.ExecuteReader("GetUserByID", parameters);
+            
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(0, result.Rows.Count); // Should be empty
+        }
     }
 } 

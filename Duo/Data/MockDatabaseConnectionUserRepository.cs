@@ -50,11 +50,15 @@ namespace Duo.Data
                     return new DataTable();
                 }
 
-                var result = _userTable.AsEnumerable()
-                    .Where(row => row.Field<int>("userID") == userId)
-                    .CopyToDataTable();
-
-                return result;
+                var filteredRows = _userTable.AsEnumerable()
+                    .Where(row => row.Field<int>("userID") == userId);
+                    
+                if (filteredRows.Any())
+                {
+                    return filteredRows.CopyToDataTable();
+                }
+                
+                return new DataTable();
             }
             else if (storedProcedure == "GetUserByUsername")
             {
@@ -73,10 +77,8 @@ namespace Duo.Data
                 {
                     return filteredRows.CopyToDataTable();
                 }
-                else
-                {
-                    return new DataTable();
-                }
+                
+                return new DataTable();
             }
 
             throw new NotImplementedException();
