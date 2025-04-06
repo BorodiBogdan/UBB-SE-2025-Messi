@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.UI.Xaml.Input;
 using Windows.Graphics.Display;
+using Duo.Services.Interfaces;
 
 namespace Duo.Services
 {
-    public class SearchService
+    public class SearchService : ISearchService
     {
         private const double EXACT_MATCH_FUZZY_SEARCHSCORE = 0.9;
         private const double HIGH_SIMILARITY_FUZZY_SEARCH_SCORE = 0.8;

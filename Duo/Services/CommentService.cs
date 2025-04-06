@@ -3,16 +3,18 @@ using System.Collections.Generic;
 using Duo.Models;
 using Duo.Services;
 using Duo.Repositories;
+using Duo.Services.Interfaces;
+using Duo.Repositories.Interfaces;
 
 namespace Duo.Services
 {
-    public class CommentService
+    public class CommentService : ICommentService
     {
-        private readonly CommentRepository _commentRepository;
-        private readonly PostRepository _postRepository;
-        private readonly UserService _userService;
+        private readonly ICommentRepository _commentRepository;
+        private readonly IPostRepository _postRepository;
+        private readonly IUserService _userService;
 
-        public CommentService(CommentRepository commentRepository, PostRepository postRepository, UserService userService)
+        public CommentService(ICommentRepository commentRepository, IPostRepository postRepository, IUserService userService)
         {
             _commentRepository = commentRepository ?? throw new ArgumentNullException(nameof(commentRepository));
             _postRepository = postRepository ?? throw new ArgumentNullException(nameof(postRepository));
@@ -133,13 +135,6 @@ namespace Duo.Services
 
             var commentCount = _commentRepository.GetCommentsCountForPost(postId);
             if (commentCount >= 1000) throw new Exception("Comment limit reached");
-        }
-
-        private void ValidateCommentNestingLevel(int parentCommentId)
-        {
-            var parentComment = _commentRepository.GetCommentById(parentCommentId);
-            if (parentComment == null) throw new Exception("Parent comment not found");
-            if (parentComment.Level >= 5) throw new Exception("Comment nesting limit reached");
         }
     }
 }

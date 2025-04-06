@@ -368,6 +368,8 @@ onnx-models
 
 /Duo/appsettings.json
 
+/TestProject1\main.cs
+
 coverage_html
 coverage_report
 coverage_summary
