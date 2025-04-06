@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Duo.Models;
-using Duo.Repositories;
+using Duo.Repositories.Interfaces;
 using Duo.Services.Interfaces;
 
 namespace Duo.Services
