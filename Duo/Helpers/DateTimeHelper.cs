@@ -46,33 +46,26 @@ namespace Duo.Helpers
         }
 
         public static DateTime? ParseDateTime(string dateTimeString, string? format = null)
-        {
-            try
-            {
-                if (string.IsNullOrWhiteSpace(dateTimeString))
-                    return null;
-
-                if (format != null)
-                {
-                    if (DateTime.TryParseExact(dateTimeString, format, CultureInfo.InvariantCulture, 
-                        DateTimeStyles.None, out DateTime result))
-                    {
-                        return result;
-                    }
-                }
-
-                if (DateTime.TryParse(dateTimeString, CultureInfo.InvariantCulture, 
-                    DateTimeStyles.None, out DateTime parsedDate))
-                {
-                    return parsedDate;
-                }
-
+        {       
+            if (string.IsNullOrWhiteSpace(dateTimeString))
                 return null;
-            }
-            catch
+
+            if (format != null)
             {
-                return null;
+                if (DateTime.TryParseExact(dateTimeString, format, CultureInfo.InvariantCulture, 
+                    DateTimeStyles.None, out DateTime result))
+                {
+                    return result;
+                }
             }
+
+            if (DateTime.TryParse(dateTimeString, CultureInfo.InvariantCulture, 
+                DateTimeStyles.None, out DateTime parsedDate))
+            {
+                return parsedDate;
+            }
+
+            return null;         
         }
 
         public static string FormatAsDate(DateTime? dateTime)
