@@ -16,6 +16,16 @@ namespace Duo.ViewModels
     {
         private readonly PostService _postService;
         private readonly CategoryService _categoryService;
+        
+        // Constants for validation and defaults
+        private const int INVALID_ID = 0;
+        private const int DEFAULT_ITEMS_PER_PAGE = 5;
+        private const int DEFAULT_PAGE_NUMBER = 1;
+        private const int DEFAULT_TOTAL_PAGES = 1;
+        private const int DEFAULT_COUNT = 0;
+        private const string ALL_HASHTAGS_FILTER = "All";
+
+        
         private int? _categoryID;
         private string _categoryName;
         private string _filterText;
@@ -34,8 +44,8 @@ namespace Duo.ViewModels
             _postService = postService ?? App._postService;
             _categoryService = categoryService ?? App._categoryService;
             _posts = new ObservableCollection<Post>();
-            _currentPage = 1;
-            _selectedHashtags.Add("All");
+            _currentPage = DEFAULT_PAGE_NUMBER;
+            _selectedHashtags.Add(ALL_HASHTAGS_FILTER);
 
             LoadPostsCommand = new RelayCommand(LoadPosts);
             NextPageCommand = new RelayCommand(NextPage);
@@ -79,7 +89,7 @@ namespace Duo.ViewModels
 
         public int CategoryID
         {
-            get => _categoryID ?? 0;
+            get => _categoryID ?? INVALID_ID;
             set
             {
                 _categoryID = value;
@@ -134,11 +144,11 @@ namespace Duo.ViewModels
             try
             {
                 _allHashtags.Clear();
-                _allHashtags.Add("All");
+                _allHashtags.Add(ALL_HASHTAGS_FILTER);
 
                 List<Hashtag> hashtags;
 
-                if (_categoryID.HasValue && _categoryID.Value > 0)
+                if (_categoryID.HasValue && _categoryID.Value > INVALID_ID)
                 {
                     hashtags = _postService.GetHashtagsByCategory(_categoryID.Value);
                 }
@@ -169,24 +179,24 @@ namespace Duo.ViewModels
 
             try
             {
-                IEnumerable<Post> allMatchingPosts;
+                IEnumerable<Post> filteredPosts;
 
-                int offset = (CurrentPage - 1) * ItemsPerPage;
+                int pageOffset = (CurrentPage - DEFAULT_PAGE_NUMBER) * ItemsPerPage;
 
-                if (_selectedHashtags.Count > 0 && !_selectedHashtags.Contains("All"))
+                if (_selectedHashtags.Count > DEFAULT_COUNT && !_selectedHashtags.Contains(ALL_HASHTAGS_FILTER))
                 {
-                    allMatchingPosts = _postService.GetPostsByHashtags(_selectedHashtags.ToList(), CurrentPage, ItemsPerPage);
+                    filteredPosts = _postService.GetPostsByHashtags(_selectedHashtags.ToList(), CurrentPage, ItemsPerPage);
                     _totalPostCount = _postService.GetPostCountByHashtags(_selectedHashtags.ToList());
                 }
-                else if (_categoryID.HasValue && _categoryID.Value > 0)
+                else if (_categoryID.HasValue && _categoryID.Value > INVALID_ID)
                 {
                     if (!string.IsNullOrEmpty(FilterText))
                     {
-                        allMatchingPosts = _postService.GetPostsByCategory(CategoryID, 1, int.MaxValue);
+                        filteredPosts = _postService.GetPostsByCategory(CategoryID, DEFAULT_PAGE_NUMBER, int.MaxValue);
                     }
                     else
                     {
-                        allMatchingPosts = _postService.GetPostsByCategory(CategoryID, CurrentPage, ItemsPerPage);
+                        filteredPosts = _postService.GetPostsByCategory(CategoryID, CurrentPage, ItemsPerPage);
                     }
 
                     _totalPostCount = _postService.GetPostCountByCategoryId(CategoryID);
@@ -196,11 +206,11 @@ namespace Duo.ViewModels
                 {
                     if (!string.IsNullOrEmpty(FilterText))
                     {
-                        allMatchingPosts = _postService.GetPaginatedPosts(1, int.MaxValue);
+                        filteredPosts = _postService.GetPaginatedPosts(DEFAULT_PAGE_NUMBER, int.MaxValue);
                     }
                     else
                     {
-                        allMatchingPosts = _postService.GetPaginatedPosts(CurrentPage, ItemsPerPage);
+                        filteredPosts = _postService.GetPaginatedPosts(CurrentPage, ItemsPerPage);
                     }
 
                     _totalPostCount = _postService.GetTotalPostCount();
@@ -209,7 +219,7 @@ namespace Duo.ViewModels
                 if (!string.IsNullOrEmpty(FilterText))
                 {
                     var searchResults = new List<Post>();
-                    foreach (var post in allMatchingPosts)
+                    foreach (var post in filteredPosts)
                     {
 
                         if (App._searchService.FindFuzzySearchMatches(FilterText, new[] { post.Title }).Any())
@@ -220,20 +230,20 @@ namespace Duo.ViewModels
 
                     _totalPostCount = searchResults.Count;
 
-                    allMatchingPosts = searchResults
-                        .Skip((CurrentPage - 1) * ItemsPerPage)
+                    filteredPosts = searchResults
+                        .Skip((CurrentPage - DEFAULT_PAGE_NUMBER) * ItemsPerPage)
                         .Take(ItemsPerPage);
                 }
 
                 Posts.Clear();
 
-                foreach (var post in allMatchingPosts)
+                foreach (var post in filteredPosts)
                 {
 
                     if (string.IsNullOrEmpty(post.Username))
                     {
-                        var user = App.userService.GetUserById(post.UserID);
-                        post.Username = user?.Username ?? "Unknown User";
+                        var postAuthor = App.userService.GetUserById(post.UserID);
+                        post.Username = postAuthor?.Username ?? "Unknown User";
                     }
                     
                     DateTime localCreatedAt = Helpers.DateTimeHelper.ConvertUtcToLocal(post.CreatedAt);
@@ -242,27 +252,26 @@ namespace Duo.ViewModels
                     post.Hashtags.Clear();
                     try 
                     {
-                        var hashtags = _postService.GetHashtagsByPostId(post.Id);
-                        foreach (var hashtag in hashtags)
+                        var postHashtags = _postService.GetHashtagsByPostId(post.Id);
+                        foreach (var hashtag in postHashtags)
                         {
                             post.Hashtags.Add(hashtag.Name);
                         }
                     }
                     catch
                     {
-
                     }
 
                     Posts.Add(post);
                 }
 
-                TotalPages = Math.Max(1, (int)Math.Ceiling(_totalPostCount / (double)ItemsPerPage));
+                TotalPages = Math.Max(DEFAULT_TOTAL_PAGES, (int)Math.Ceiling(_totalPostCount / (double)ItemsPerPage));
 
                 OnPropertyChanged(nameof(TotalPages));
             }
             catch (Exception ex)
             {
-                
+                // Handle exception
             }
         }
 
@@ -277,7 +286,7 @@ namespace Duo.ViewModels
 
         private void PreviousPage()
         {
-            if (CurrentPage > 1)
+            if (CurrentPage > DEFAULT_PAGE_NUMBER)
             {
                 CurrentPage--;
                 LoadPosts();
@@ -290,10 +299,10 @@ namespace Duo.ViewModels
 
             try
             {
-                if (hashtag == "All")
+                if (hashtag == ALL_HASHTAGS_FILTER)
                 {
                     _selectedHashtags.Clear();
-                    _selectedHashtags.Add("All");
+                    _selectedHashtags.Add(ALL_HASHTAGS_FILTER);
                 }
                 else
                 {
@@ -301,36 +310,35 @@ namespace Duo.ViewModels
                     {
                         _selectedHashtags.Remove(hashtag);
 
-                        if (_selectedHashtags.Count == 0)
+                        if (_selectedHashtags.Count == DEFAULT_COUNT)
                         {
-                            _selectedHashtags.Add("All");
+                            _selectedHashtags.Add(ALL_HASHTAGS_FILTER);
                         }
                     }
                     else
                     {
                         _selectedHashtags.Add(hashtag);
 
-                        if (_selectedHashtags.Contains("All"))
+                        if (_selectedHashtags.Contains(ALL_HASHTAGS_FILTER))
                         {
-                            _selectedHashtags.Remove("All");
+                            _selectedHashtags.Remove(ALL_HASHTAGS_FILTER);
                         }
                     }
                 }
 
-                CurrentPage = 1;
+                CurrentPage = DEFAULT_PAGE_NUMBER;
 
                 OnPropertyChanged(nameof(SelectedHashtags));
                 LoadPosts();
             }
             catch (Exception ex)
             {
-
             }
         }
 
         public void FilterPosts()
         {
-            CurrentPage = 1;
+            CurrentPage = DEFAULT_PAGE_NUMBER;
             LoadPosts();
         }
 
@@ -338,8 +346,8 @@ namespace Duo.ViewModels
         {
             FilterText = string.Empty;
             _selectedHashtags.Clear();
-            _selectedHashtags.Add("All");
-            CurrentPage = 1;
+            _selectedHashtags.Add(ALL_HASHTAGS_FILTER);
+            CurrentPage = DEFAULT_PAGE_NUMBER;
             LoadPosts();
             OnPropertyChanged(nameof(SelectedHashtags));
         }

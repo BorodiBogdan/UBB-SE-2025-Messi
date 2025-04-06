@@ -11,8 +11,14 @@ namespace Duo.Data
     public class MockDatabaseConnectionHashtagRepository : IDatabaseConnection
     {
         private MockDataTables _mockDataTables = new MockDataTables();
+        private bool _shouldThrowSqlException = false;
 
         public MockDatabaseConnectionHashtagRepository() { }
+
+        public void SetShouldThrowSqlException(bool shouldThrow)
+        {
+            _shouldThrowSqlException = shouldThrow;
+        }
 
         public void CloseConnection()
         {
@@ -23,14 +29,22 @@ namespace Duo.Data
         {
             if (storedProcedure == "AddHashtagToPost")
             {
-                ConvertSqlParameterToInt(sqlParameters?[0]); // PostID
-                ConvertSqlParameterToInt(sqlParameters?[1]); // HashtagID
+                int postId = ConvertSqlParameterToInt(sqlParameters?[0]); // PostID
+                int hashtagId = ConvertSqlParameterToInt(sqlParameters?[1]); // HashtagID
+                
+                if (postId == 404 || hashtagId == 404)
+                    throw new SqlExceptionThrower().throwSqlException();
+                    
                 return 1;
             }
             else if (storedProcedure == "DeleteHashtagFromPost")
             {
-                ConvertSqlParameterToInt(sqlParameters?[0]); // PostID
-                ConvertSqlParameterToInt(sqlParameters?[1]); // HashtagID
+                int postId = ConvertSqlParameterToInt(sqlParameters?[0]); // PostID
+                int hashtagId = ConvertSqlParameterToInt(sqlParameters?[1]); // HashtagID
+                
+                if (postId == 404 || hashtagId == 404)
+                    throw new SqlExceptionThrower().throwSqlException();
+                    
                 return 1;
             }
 
@@ -44,6 +58,9 @@ namespace Duo.Data
             if (storedProcedure == "GetHashtagByText")
             {
                 string text = sqlParameters?[0]?.Value?.ToString() ?? "";
+                if (text == "error")
+                    throw new SqlExceptionThrower().throwSqlException();
+                    
                 return HashtagRepositoryDataTABLE.AsEnumerable()
                     .Where(row => row.Field<string>("Tag") == text)
                     .CopyToDataTable();
@@ -51,17 +68,26 @@ namespace Duo.Data
             else if (storedProcedure == "GetHashtagsForPost")
             {
                 int postId = ConvertSqlParameterToInt(sqlParameters?[0]);
+                if (postId == 404)
+                    throw new SqlExceptionThrower().throwSqlException();
+                    
                 return HashtagRepositoryDataTABLE.AsEnumerable()
                     .Where(row => row.Field<int>("PostID") == postId)
                     .CopyToDataTable();
             }
             else if (storedProcedure == "GetAllHashtags")
             {
+                if (_shouldThrowSqlException)
+                    throw new SqlExceptionThrower().throwSqlException();
+                    
                 return HashtagRepositoryDataTABLE;
             }
             else if (storedProcedure == "GetHashtagsByCategory")
             {
                 int categoryId = ConvertSqlParameterToInt(sqlParameters?[0]);
+                if (categoryId == 404)
+                    throw new SqlExceptionThrower().throwSqlException();
+                    
                 return HashtagRepositoryDataTABLE.AsEnumerable()
                     .Where(row => row.Field<int>("CategoryID") == categoryId)
                     .CopyToDataTable();
@@ -77,6 +103,8 @@ namespace Duo.Data
                 string tag = sqlParameters?[0]?.Value?.ToString() ?? "";
                 if (string.IsNullOrEmpty(tag))
                     throw new ArgumentException("Tag cannot be empty");
+                if (tag == "error")
+                    throw new SqlExceptionThrower().throwSqlException();
                 return (T)Convert.ChangeType(1, typeof(T));
             }
 

@@ -12,7 +12,7 @@ namespace TestProject1.Repositories
 {
     public class HashtagRepositoryTests : IDisposable
     {
-        private readonly IDatabaseConnection _dataLinkMock;
+        private readonly MockDatabaseConnectionHashtagRepository _dataLinkMock;
         private readonly HashtagRepository _repository;
 
         public HashtagRepositoryTests()
@@ -56,6 +56,16 @@ namespace TestProject1.Repositories
         }
 
         [Fact]
+        public void GetHashtagByText_SqlError_ReturnsNull()
+        {
+            // Act
+            var result = _repository.GetHashtagByText("error");
+
+            // Assert
+            Assert.Null(result);
+        }
+
+        [Fact]
         public void CreateHashtag_ValidTag_ReturnsNewHashtag()
         {
             // Act
@@ -72,6 +82,14 @@ namespace TestProject1.Repositories
         {
             // Act & Assert
             Assert.Throws<Exception>(() => _repository.CreateHashtag(""));
+        }
+
+        [Fact]
+        public void CreateHashtag_SqlError_ThrowsException()
+        {
+            // Act & Assert
+            var exception = Assert.Throws<Exception>(() => _repository.CreateHashtag("error"));
+            Assert.Contains("Error - CreateHashtag:", exception.Message);
         }
 
         [Fact]
@@ -96,6 +114,14 @@ namespace TestProject1.Repositories
         }
 
         [Fact]
+        public void GetHashtagsByPostId_SqlError_ThrowsException()
+        {
+            // Act & Assert
+            var exception = Assert.Throws<Exception>(() => _repository.GetHashtagsByPostId(404));
+            Assert.Contains("Error - GetHashtagsByPostId:", exception.Message);
+        }
+
+        [Fact]
         public void AddHashtagToPost_ValidIds_ReturnsTrue()
         {
             // Act
@@ -113,6 +139,22 @@ namespace TestProject1.Repositories
         }
 
         [Fact]
+        public void AddHashtagToPost_SqlError_ThrowsException()
+        {
+            // Act & Assert
+            var exception = Assert.Throws<Exception>(() => _repository.AddHashtagToPost(404, 1));
+            Assert.Contains("Error - AddHashtagToPost:", exception.Message);
+        }
+
+        [Fact]
+        public void AddHashtagToPost_InvalidHashtagId_ThrowsException()
+        {
+            // Act & Assert
+            var exception = Assert.Throws<Exception>(() => _repository.AddHashtagToPost(1, 404));
+            Assert.Contains("Error - AddHashtagToPost:", exception.Message);
+        }
+
+        [Fact]
         public void RemoveHashtagFromPost_ValidIds_ReturnsTrue()
         {
             // Act
@@ -127,6 +169,22 @@ namespace TestProject1.Repositories
         {
             // Act & Assert
             Assert.Throws<Exception>(() => _repository.RemoveHashtagFromPost(0, 1));
+        }
+
+        [Fact]
+        public void RemoveHashtagFromPost_SqlError_ThrowsException()
+        {
+            // Act & Assert
+            var exception = Assert.Throws<Exception>(() => _repository.RemoveHashtagFromPost(404, 1));
+            Assert.Contains("Error - RemoveHashtagFromPost:", exception.Message);
+        }
+
+        [Fact]
+        public void RemoveHashtagFromPost_InvalidHashtagId_ThrowsException()
+        {
+            // Act & Assert
+            var exception = Assert.Throws<Exception>(() => _repository.RemoveHashtagFromPost(1, 404));
+            Assert.Contains("Error - RemoveHashtagFromPost:", exception.Message);
         }
 
         [Fact]
@@ -158,6 +216,17 @@ namespace TestProject1.Repositories
         }
 
         [Fact]
+        public void GetAllHashtags_SqlError_ThrowsException()
+        {
+            // Arrange
+            _dataLinkMock.SetShouldThrowSqlException(true);
+
+            // Act & Assert
+            var exception = Assert.Throws<Exception>(() => _repository.GetAllHashtags());
+            Assert.Contains("Error - GetAllHashtags:", exception.Message);
+        }
+
+        [Fact]
         public void GetHashtagsByCategory_ValidCategoryId_ReturnsHashtags()
         {
             // Act
@@ -175,6 +244,14 @@ namespace TestProject1.Repositories
         {
             // Act & Assert
             Assert.Throws<Exception>(() => _repository.GetHashtagsByCategory(0));
+        }
+
+        [Fact]
+        public void GetHashtagsByCategory_SqlError_ThrowsException()
+        {
+            // Act & Assert
+            var exception = Assert.Throws<Exception>(() => _repository.GetHashtagsByCategory(404));
+            Assert.Contains("Error - GetHashtagsByCategory:", exception.Message);
         }
     }
 }

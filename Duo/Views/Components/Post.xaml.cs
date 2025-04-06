@@ -19,6 +19,9 @@ namespace Duo.Views.Components
 {
     public sealed partial class Post : UserControl
     {
+        // Constants
+        private const string UNKNOWN_USER_TEXT = "Unknown User";
+        
         public static readonly DependencyProperty UsernameProperty = 
             DependencyProperty.Register(nameof(Username), typeof(string), typeof(Post), new PropertyMetadata(""));
         

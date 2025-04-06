@@ -17,8 +17,12 @@ namespace Duo.Views.Pages
 {
     public sealed partial class PostListPage : Page
     {
+        // Constants
+        private const int INVALID_ID = 0;
+        private const int DEFAULT_PAGE_NUMBER = 1;
+        
         private PostListViewModel _viewModel;
-        private Dictionary<string, Button> hashtagButtons = new Dictionary<string, Button>();
+        private Dictionary<string, Button> _hashtagButtons = new Dictionary<string, Button>();
 
         private double _previousPosition;
         private bool _isDragging;
@@ -50,12 +54,12 @@ namespace Duo.Views.Pages
 
                 PageTitle.Text = categoryName;
 
-                if (_viewModel.CategoryID == 0 && _viewModel.CategoryName != null)
+                if (_viewModel.CategoryID == INVALID_ID && _viewModel.CategoryName != null)
                 {
-                    var category = _categoryService.GetCategoryByName(_viewModel.CategoryName);
-                    if (category != null)
+                    var categoryInfo = _categoryService.GetCategoryByName(_viewModel.CategoryName);
+                    if (categoryInfo != null)
                     {
-                        _viewModel.CategoryID = category.Id;
+                        _viewModel.CategoryID = categoryInfo.Id;
                     }
                 }
             }
@@ -68,7 +72,7 @@ namespace Duo.Views.Pages
         private void UpdateHashtagsList()
         {
             HashtagsContainer.Items.Clear();
-            hashtagButtons.Clear();
+            _hashtagButtons.Clear();
 
             if (_viewModel.AllHashtags != null)
             {
@@ -85,14 +89,14 @@ namespace Duo.Views.Pages
 
                     button.Click += Hashtag_Click;
                     HashtagsContainer.Items.Add(button);
-                    hashtagButtons[hashtag] = button;
+                    _hashtagButtons[hashtag] = button;
                 }
             }
         }
 
         private void PostsPager_SelectedIndexChanged(PipsPager sender, PipsPagerSelectedIndexChangedEventArgs args)
         {
-            _viewModel.CurrentPage = sender.SelectedPageIndex + 1;
+            _viewModel.CurrentPage = sender.SelectedPageIndex + DEFAULT_PAGE_NUMBER;
             _viewModel.LoadPosts();
         }
 
@@ -116,7 +120,7 @@ namespace Duo.Views.Pages
 
         private void UpdateHashtagButtonStyles()
         {
-            foreach (var entry in hashtagButtons)
+            foreach (var entry in _hashtagButtons)
             {
                 string hashtag = entry.Key;
                 Button button = entry.Value;

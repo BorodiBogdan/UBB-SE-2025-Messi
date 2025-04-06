@@ -10,6 +10,7 @@
     <IsTestProject>true</IsTestProject>
     <Platforms>AnyCPU;x64</Platforms>
 	  <WindowsSdkPackageVersion>10.0.19041.38</WindowsSdkPackageVersion>
+	  <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
