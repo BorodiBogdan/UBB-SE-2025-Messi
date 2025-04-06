@@ -71,7 +71,8 @@ namespace Duo.Repositories
                 };
                 var result = _dataLink.ExecuteScalar<int>("CreateHashtag", sqlParameters);
 
-                if (result == QUERRY_ERROR) throw new Exception("Error - CreateHashtag: Hashtag could not be created!");
+                if (result == QUERRY_ERROR) 
+                    throw new Exception("Error - CreateHashtag: Hashtag could not be created!");
 
                 Hashtag newHashtag = new Hashtag(
                     result,
@@ -129,7 +130,8 @@ namespace Duo.Repositories
         public bool AddHashtagToPost(int postId, int hashtagId)
         {
             if (postId <= INVALID) throw new Exception("Error - AddHashtagToPost: PostId must be greater than 0");
-            if (hashtagId <= INVALID) throw new Exception("Error - AddHashtagToPost: HashtagId must be greater than 0");
+            if (hashtagId <= INVALID) 
+                throw new Exception("Error - AddHashtagToPost: HashtagId must be greater than 0");
             
             try
             {
