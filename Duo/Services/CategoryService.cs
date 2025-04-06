@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using Duo.Models;
 using Duo.Repositories;
 using Duo.Repositories.Interfaces;
+using Duo.Services.Interfaces;
 
 namespace Duo.Services
 {
-    public class CategoryService
+    public class CategoryService : ICategoryService
     {
         private readonly ICategoryRepository _categoryRepository;
 
