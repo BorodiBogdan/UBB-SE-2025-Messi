@@ -2,10 +2,11 @@ using System;
 using System.Collections.Generic;
 using Duo.Models;
 using Duo.Repositories;
+using Duo.Services.Interfaces;
 
 namespace Duo.Services
 {
-    public class UserService
+    public class UserService : IUserService
     {
         private readonly UserRepository _userRepository;
         private User _currentUser;
