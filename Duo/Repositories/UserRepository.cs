@@ -36,15 +36,9 @@ namespace Duo.Repositories
             {
                 new SqlParameter("@Username", user.Username),
             };
-            try
-            {
-                int? result = dataLink.ExecuteScalar<int>("CreateUser", parameters);
-                return result ?? 0;
-            }
-            catch (SqlException ex)
-            {
-                throw new Exception($"Database error: {ex.Message}");
-            }
+            
+            int? result = dataLink.ExecuteScalar<int>("CreateUser", parameters);
+            return result ?? 0;
         }
 
         public User GetUserById(int id)
@@ -72,10 +66,6 @@ namespace Duo.Repositories
                     Convert.ToInt32(row[0]),
                     row[1]?.ToString() ?? string.Empty
                 );
-            }
-            catch (SqlException ex)
-            {
-                throw new Exception($"Database error: {ex.Message}");
             }
             finally
             {
@@ -108,10 +98,6 @@ namespace Duo.Repositories
                     Convert.ToInt32(row["userID"]),
                     row["username"]?.ToString() ?? string.Empty
                 );
-            }
-            catch (SqlException ex)
-            {
-                throw new Exception($"Database error: {ex.Message}");
             }
             finally
             {
