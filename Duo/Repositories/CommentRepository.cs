@@ -14,6 +14,7 @@ namespace Duo.Repositories
     public class CommentRepository : ICommentRepository
     {
         private readonly IDatabaseConnection _dataLink;
+        private const int MINIMUM_ALLOWED_ID_NUMBER = 0;
 
         public CommentRepository(IDatabaseConnection dataLink)
         {
@@ -22,7 +23,7 @@ namespace Duo.Repositories
 
         public Comment GetCommentById(int commentId)
         {
-            if (commentId <= 0) throw new ArgumentException("Invalid comment ID", nameof(commentId));
+            if (commentId <= MINIMUM_ALLOWED_ID_NUMBER) throw new ArgumentException("Invalid comment ID", nameof(commentId));
 
             SqlParameter[] parameters = new SqlParameter[]
             {
@@ -36,16 +37,24 @@ namespace Duo.Repositories
                 if (dataTable.Rows.Count == 0)
                     throw new Exception("Comment not found");
 
+                const int ID_INDEX = 0;
+                const int CONTENT_INDEX = 1;
+                const int USER_ID_INDEX = 2;
+                const int POST_ID_INDEX = 3;
+                const int PARENT_COMMENT_ID_INDEX = 4;
+                const int CREATED_AT_INDEX = 5;
+                const int LIKE_COUNT_INDEX = 6;
+                const int LEVEL_INDEX = 7;
                 var row = dataTable.Rows[0];
                 return new Comment(
-                    Convert.ToInt32(row[0]),
-                    row[1]?.ToString() ?? string.Empty,
-                    Convert.ToInt32(row[2]),
-                    Convert.ToInt32(row[3]),
-                    row[4] == DBNull.Value ? 0 : Convert.ToInt32(row[4]),
-                    Convert.ToDateTime(row[5]),
-                    Convert.ToInt32(row[6]),
-                    Convert.ToInt32(row[7])
+                    Convert.ToInt32(row[ID_INDEX]),
+                    row[CONTENT_INDEX]?.ToString() ?? string.Empty,
+                    Convert.ToInt32(row[USER_ID_INDEX]),
+                    Convert.ToInt32(row[POST_ID_INDEX]),
+                    row[PARENT_COMMENT_ID_INDEX] == DBNull.Value ? 0 : Convert.ToInt32(row[PARENT_COMMENT_ID_INDEX]),
+                    Convert.ToDateTime(row[CREATED_AT_INDEX]),
+                    Convert.ToInt32(row[LIKE_COUNT_INDEX]),
+                    Convert.ToInt32(row[LEVEL_INDEX])
                 );
             }
             catch (SqlException ex)
@@ -73,22 +82,8 @@ namespace Duo.Repositories
             {
                 dataTable = _dataLink.ExecuteReader("GetCommentsByPostID", parameters);
 
-                foreach (DataRow row in dataTable.Rows)
-                {           
-                    int commentId = Convert.ToInt32(row[0]);
-                    Comment comment = new Comment(
-                        commentId,
-                        row[1]?.ToString() ?? string.Empty,
-                        Convert.ToInt32(row[2]),
-                        Convert.ToInt32(row[3]),
-                        row[4] == DBNull.Value ? null : Convert.ToInt32(row[4]),
-                        Convert.ToDateTime(row[5]),
-                        Convert.ToInt32(row[7]),
-                        Convert.ToInt32(row[6])
-                    );
-                    comments.Add(comment);                   
-                }
-                
+                comments = convertDataTableToCommentList(dataTable);
+
                 return comments;
             }
             catch (SqlException ex)
@@ -109,8 +104,8 @@ namespace Duo.Repositories
         {
             if (comment == null) throw new ArgumentNullException(nameof(comment));
             if (string.IsNullOrEmpty(comment.Content)) throw new ArgumentException("Content cannot be empty");
-            if (comment.UserId <= 0) throw new ArgumentException("Invalid user ID");
-            if (comment.PostId <= 0) throw new ArgumentException("Invalid post ID");
+            if (comment.UserId <= MINIMUM_ALLOWED_ID_NUMBER) throw new ArgumentException("Invalid user ID");
+            if (comment.PostId <= MINIMUM_ALLOWED_ID_NUMBER) throw new ArgumentException("Invalid post ID");
 
             SqlParameter[] parameters = new SqlParameter[]
             {
@@ -136,7 +131,7 @@ namespace Duo.Repositories
 
         public bool DeleteComment(int id)
         {
-            if (id <= 0) throw new ArgumentException("Invalid comment ID", nameof(id));
+            if (id <= MINIMUM_ALLOWED_ID_NUMBER) throw new ArgumentException("Invalid comment ID", nameof(id));
 
             SqlParameter[] parameters = new SqlParameter[]
             {
@@ -156,7 +151,7 @@ namespace Duo.Repositories
 
         public List<Comment> GetRepliesByCommentId(int parentCommentId)
         {
-            if (parentCommentId <= 0) throw new ArgumentException("Invalid parent comment ID", nameof(parentCommentId));
+            if (parentCommentId <= MINIMUM_ALLOWED_ID_NUMBER) throw new ArgumentException("Invalid parent comment ID", nameof(parentCommentId));
 
             List<Comment> comments = new List<Comment>();
             SqlParameter[] parameters = new SqlParameter[]
@@ -169,20 +164,8 @@ namespace Duo.Repositories
             {
                 dataTable = _dataLink.ExecuteReader("GetReplies", parameters);
 
-                foreach (DataRow row in dataTable.Rows)
-                {
-                    Comment comment = new Comment(
-                        Convert.ToInt32(row[0]),
-                        row[1]?.ToString() ?? string.Empty,
-                        Convert.ToInt32(row[2]),
-                        Convert.ToInt32(row[3]),
-                        row[4] == DBNull.Value ? 0 : Convert.ToInt32(row[4]),
-                        Convert.ToDateTime(row[5]),
-                        Convert.ToInt32(row[6]),
-                        Convert.ToInt32(row[7])
-                    );
-                    comments.Add(comment);
-                }
+                comments = convertDataTableToCommentList(dataTable);
+
                 return comments;
             }
             catch (SqlException ex)
@@ -197,7 +180,7 @@ namespace Duo.Repositories
 
         public bool IncrementLikeCount(int commentId)
         {
-            if (commentId <= 0) throw new ArgumentException("Invalid comment ID", nameof(commentId));
+            if (commentId <= MINIMUM_ALLOWED_ID_NUMBER) throw new ArgumentException("Invalid comment ID", nameof(commentId));
 
             SqlParameter[] parameters = new SqlParameter[]
             {
@@ -217,7 +200,7 @@ namespace Duo.Repositories
 
         public int GetCommentsCountForPost(int postId)
         {
-            if (postId <= 0) throw new ArgumentException("Invalid post ID", nameof(postId));
+            if (postId <= MINIMUM_ALLOWED_ID_NUMBER) throw new ArgumentException("Invalid post ID", nameof(postId));
 
             SqlParameter[] parameters = new SqlParameter[]
             {
@@ -234,6 +217,35 @@ namespace Duo.Repositories
             {
                 throw new Exception(ex.Message);
             }
+        }
+        private List<Comment> convertDataTableToCommentList(DataTable dataTable)
+        {
+            List<Comment> comments = new List<Comment>();
+            const int ID_INDEX = 0;
+            const int CONTENT_INDEX = 1;
+            const int USER_ID_INDEX = 2;
+            const int POST_ID_INDEX = 3;
+            const int PARENT_COMMENT_ID_INDEX = 4;
+            const int CREATED_AT_INDEX = 5;
+            const int LIKE_COUNT_INDEX = 6;
+            const int LEVEL_INDEX = 7;
+
+            foreach (DataRow row in dataTable.Rows)
+            {
+                int commentId = Convert.ToInt32(row[ID_INDEX]);
+                Comment comment = new Comment(
+                    commentId,
+                    row[CONTENT_INDEX]?.ToString() ?? string.Empty,
+                    Convert.ToInt32(row[USER_ID_INDEX]),
+                    Convert.ToInt32(row[POST_ID_INDEX]),
+                    row[PARENT_COMMENT_ID_INDEX] == DBNull.Value ? null : Convert.ToInt32(row[PARENT_COMMENT_ID_INDEX]),
+                    Convert.ToDateTime(row[CREATED_AT_INDEX]),
+                    Convert.ToInt32(row[LEVEL_INDEX]),
+                    Convert.ToInt32(row[LIKE_COUNT_INDEX])
+                );
+                comments.Add(comment);
+            }
+            return comments;
         }
     }
 }
