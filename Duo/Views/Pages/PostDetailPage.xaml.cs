@@ -19,6 +19,10 @@ namespace Duo.Views.Pages
 {
     public sealed partial class PostDetailPage : Page
     {
+        // Constants
+        private const int INVALID_ID = 0;
+        private const int DEFAULT_MARGIN = 16;
+        
         private readonly CommentService _commentService;
 
         public PostDetailPage()
@@ -36,7 +40,7 @@ namespace Duo.Views.Pages
         {
             base.OnNavigatedTo(e);
 
-            if (e.Parameter is Models.Post post && post.Id > 0)
+            if (e.Parameter is Models.Post post && post.Id > INVALID_ID)
             {
                 ViewModel.LoadPostDetails(post.Id);
             }
@@ -86,7 +90,7 @@ namespace Duo.Views.Pages
                 TextBlock noCommentsText = new TextBlock
                 {
                     Text = "No comments yet. Be the first to comment!",
-                    Margin = new Thickness(0, 16, 0, 16)
+                    Margin = new Thickness(0, DEFAULT_MARGIN, 0, DEFAULT_MARGIN)
                 };
                 CommentsPanel.Children.Add(noCommentsText);
                 return;
@@ -98,7 +102,7 @@ namespace Duo.Views.Pages
                 {
                     Text = ViewModel.ErrorMessage,
                     Foreground = new SolidColorBrush(Microsoft.UI.Colors.Red),
-                    Margin = new Thickness(0, 16, 0, 16)
+                    Margin = new Thickness(0, DEFAULT_MARGIN, 0, DEFAULT_MARGIN)
                 };
                 CommentsPanel.Children.Add(errorText);
                 return;
