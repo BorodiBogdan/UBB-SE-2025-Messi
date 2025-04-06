@@ -7,13 +7,14 @@ using Duo.Services;
 using Duo.Repositories;
 using System.Diagnostics;
 using System.Linq;
+using Duo.Repositories.Interfaces;
 
 namespace Duo.Services
 {
     public class PostService
     {
         private readonly PostRepository _postRepository;
-        private readonly HashtagRepository _hashtagRepository;
+        private readonly IHashtagRepository _hashtagRepository;
         private readonly UserService _userService;
         private readonly SearchService _searchService;
         private const double FUZZY_SEARCH_SCORE_DEFAULT_THRESHOLD = 0.6;
@@ -24,7 +25,7 @@ namespace Duo.Services
         private const int MIN_PAGE_SIZE = 1;
         private const int DEFAULT_COUNT = 0;
 
-        public PostService(PostRepository postRepository, HashtagRepository hashtagRepository, UserService userService, SearchService searchService)
+        public PostService(PostRepository postRepository, IHashtagRepository hashtagRepository, UserService userService, SearchService searchService)
         {
             _postRepository = postRepository;
             _hashtagRepository = hashtagRepository;
