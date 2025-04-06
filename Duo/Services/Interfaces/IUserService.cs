@@ -1,9 +1,4 @@
-﻿using Duo.Repositories;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System;
 using Duo.Models;
 
 namespace Duo.Services.Interfaces
@@ -20,4 +15,4 @@ namespace Duo.Services.Interfaces
         public User GetUserByUsername(string username);
 
     }
-}
+} 
