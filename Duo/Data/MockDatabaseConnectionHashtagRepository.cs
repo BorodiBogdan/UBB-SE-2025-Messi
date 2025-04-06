@@ -12,12 +12,32 @@ namespace Duo.Data
     {
         private MockDataTables _mockDataTables = new MockDataTables();
         private bool _shouldThrowSqlException = false;
+        private Dictionary<string, DataTable> _customResults = new Dictionary<string, DataTable>();
+        private HashSet<string> _queryErrors = new HashSet<string>();
 
         public MockDatabaseConnectionHashtagRepository() { }
 
         public void SetShouldThrowSqlException(bool shouldThrow)
         {
             _shouldThrowSqlException = shouldThrow;
+        }
+
+        public void ClearCustomResults()
+        {
+            _customResults.Clear();
+            _queryErrors.Clear();
+            _shouldThrowSqlException = false;
+        }
+
+        public void SetupEmptyResult(string storedProcedure, DataTable result)
+        {
+            ClearCustomResults();
+            _customResults[storedProcedure] = result;
+        }
+
+        public void SetupQueryError(string storedProcedure)
+        {
+            _queryErrors.Add(storedProcedure);
         }
 
         public void CloseConnection()
@@ -27,6 +47,9 @@ namespace Duo.Data
 
         public int ExecuteNonQuery(string storedProcedure, SqlParameter[]? sqlParameters = null)
         {
+            if (_queryErrors.Contains(storedProcedure))
+                return 0; // Simulate query error
+
             if (storedProcedure == "AddHashtagToPost")
             {
                 int postId = ConvertSqlParameterToInt(sqlParameters?[0]); // PostID
@@ -53,6 +76,14 @@ namespace Duo.Data
 
         public DataTable ExecuteReader(string storedProcedure, SqlParameter[]? sqlParameters = null)
         {
+            if (_customResults.ContainsKey(storedProcedure))
+            {
+                var result = _customResults[storedProcedure];
+                if (storedProcedure == "GetAllHashtags" && _shouldThrowSqlException)
+                    throw new SqlExceptionThrower().throwSqlException();
+                return result;
+            }
+
             var HashtagRepositoryDataTABLE = _mockDataTables.HashtagRepositoryDataTABLE;
 
             if (storedProcedure == "GetHashtagByText")
@@ -98,6 +129,9 @@ namespace Duo.Data
 
         public T? ExecuteScalar<T>(string storedProcedure, SqlParameter[]? sqlParameters = null)
         {
+            if (_queryErrors.Contains(storedProcedure))
+                return (T)Convert.ChangeType(0, typeof(T)); // Simulate query error
+
             if (storedProcedure == "CreateHashtag")
             {
                 string tag = sqlParameters?[0]?.Value?.ToString() ?? "";
