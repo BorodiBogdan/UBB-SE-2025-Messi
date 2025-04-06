@@ -8,7 +8,6 @@ namespace Duo.Data
 {
     public class MockDatabaseConnectionUserRepository : IDatabaseConnection
     {
-        private MockDataTables _mockDataTables = new MockDataTables();
         private DataTable _userTable;
 
         public MockDatabaseConnectionUserRepository()
@@ -42,29 +41,49 @@ namespace Duo.Data
         {
             if (storedProcedure == "GetUserByID")
             {
-                int userId = ConvertSqlParameterToInt(sqlParameters?[0]);
+                if (sqlParameters == null || sqlParameters.Length == 0)
+                    throw new ArgumentException("UserID parameter is required");
+
+                int userId = ConvertSqlParameterToInt(sqlParameters[0]);
+                
+                // Special case for 404 - always throw exception
+                if (userId == 404 || userId == 505)
+                    throw new Exception("Database error: SQL error occurred");
+                
+                if (userId == 0)
+                    throw new ArgumentException("Invalid user ID.");
                 
                 if (userId == 40)
+                    return new DataTable(); // Empty table for non-existent user
+
+                var filteredRows = _userTable.AsEnumerable()
+                    .Where(row => row.Field<int>("userID") == userId);
+                    
+                if (filteredRows.Any())
                 {
-                    // Return empty table to simulate user not found
-                    return new DataTable();
+                    return filteredRows.CopyToDataTable();
                 }
-
-                var result = _userTable.AsEnumerable()
-                    .Where(row => row.Field<int>("userID") == userId)
-                    .CopyToDataTable();
-
-                return result;
+                
+                return new DataTable();
             }
             else if (storedProcedure == "GetUserByUsername")
             {
-                string username = sqlParameters?[0].Value.ToString();
+                if (sqlParameters == null || sqlParameters.Length == 0)
+                    throw new ArgumentException("Username parameter is required");
+
+                string username = sqlParameters[0].Value?.ToString() ?? "";
                 
-                if (username == "NonExistentUser")
-                {
-                    // Return empty table to simulate user not found
-                    return new DataTable();
-                }
+                if (string.IsNullOrEmpty(username))
+                    throw new ArgumentException("Username cannot be empty");
+                
+                if (username == "NonExistentUser" || username == "NewUser")
+                    return new DataTable(); // Empty table for non-existent user
+                
+                if (username == "SQLErrorUser" || username == "SQLExceptionUser")
+                    throw new Exception("Database error: SQL error occurred");
+                
+                if (username == "ExistingUser")
+                    return _userTable.AsEnumerable().Where(r => r.Field<int>("userID") == 1).CopyToDataTable();
 
                 var filteredRows = _userTable.AsEnumerable()
                     .Where(row => row.Field<string>("username") == username);
@@ -73,10 +92,8 @@ namespace Duo.Data
                 {
                     return filteredRows.CopyToDataTable();
                 }
-                else
-                {
-                    return new DataTable();
-                }
+                
+                return new DataTable();
             }
 
             throw new NotImplementedException();
@@ -86,10 +103,13 @@ namespace Duo.Data
         {
             if (storedProcedure == "CreateUser")
             {
-                if (sqlParameters?[0].Value.ToString() == "ErrorUser")
-                {
-                    throw new SqlExceptionThrower().throwSqlException();
-                }
+                if (sqlParameters == null || sqlParameters.Length == 0)
+                    return (T)Convert.ChangeType(4, typeof(T)); // Default return for CreateUser
+                
+                string username = sqlParameters[0].Value?.ToString() ?? "";
+                
+                if (username == "SQLErrorCreateUser" || username == "SqlExceptionUser" || username == "ErrorUser")
+                    throw new Exception("Database error: SQL error occurred");
                 
                 return (T)Convert.ChangeType(4, typeof(T)); // Return new user ID
             }
@@ -102,12 +122,7 @@ namespace Duo.Data
             if (param == null)
                 throw new ArgumentNullException(nameof(param), "SqlParameter cannot be null.");
 
-            int convertedValue = param.Value?.ToString() == null ? 0 : Convert.ToInt32(param.Value.ToString());
-            
-            if (convertedValue == 404)
-                throw new SqlExceptionThrower().throwSqlException();
-            
-            return convertedValue;
+            return param.Value == null ? 0 : Convert.ToInt32(param.Value);
         }
     }
 } 

@@ -2,15 +2,16 @@ using System;
 using System.Collections.Generic;
 using Duo.Models;
 using Duo.Repositories;
+using Duo.Repositories.Interfaces;
 
 namespace Duo.Services
 {
     public class UserService
     {
-        private readonly UserRepository _userRepository;
+        private readonly IUserRepository _userRepository;
         private User _currentUser;
 
-        public UserService(UserRepository userRepository)
+        public UserService(IUserRepository userRepository)
         {
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
         }

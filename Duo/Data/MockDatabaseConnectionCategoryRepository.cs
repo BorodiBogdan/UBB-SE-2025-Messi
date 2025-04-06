@@ -41,13 +41,27 @@ namespace Duo.Data
         {
             if (storedProcedure == "GetCategories")
             {
+                if (sqlParameters != null && sqlParameters.Length > 0 && sqlParameters[0].ParameterName == "DatabaseExceptionTest")
+                {
+                    throw new Exception("Database error");
+                }
                 return _categoryTable;
             }
             else if (storedProcedure == "GetCategoryByName")
             {
-                string categoryName = sqlParameters?[0].Value.ToString();
+                if (sqlParameters == null || sqlParameters.Length == 0)
+                {
+                    throw new ArgumentException("Category name parameter is required");
+                }
+
+                string categoryName = sqlParameters[0].Value?.ToString() ?? "";
                 
-                if (categoryName == "NonExistentCategory")
+                if (string.IsNullOrEmpty(categoryName))
+                {
+                    throw new ArgumentException("Category name cannot be empty");
+                }
+                
+                if (categoryName == "NonExistentCategory" || categoryName == "OtherCategory")
                 {
                     // Return empty table to simulate category not found
                     return new DataTable();
@@ -66,7 +80,7 @@ namespace Duo.Data
                 }
             }
 
-            throw new NotImplementedException();
+            throw new NotImplementedException($"Stored procedure '{storedProcedure}' not implemented in mock");
         }
 
         public T? ExecuteScalar<T>(string storedProcedure, SqlParameter[]? sqlParameters = null)

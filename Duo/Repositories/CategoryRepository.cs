@@ -5,10 +5,11 @@ using System.Collections.ObjectModel;
 using System;
 using Duo.Models;
 using Duo.Data;
+using Duo.Repositories.Interfaces;
 
 namespace Duo.Repositories
 {
-    public class CategoryRepository
+    public class CategoryRepository : ICategoryRepository
     {
         private readonly IDatabaseConnection _dataLink;
 
@@ -17,14 +18,15 @@ namespace Duo.Repositories
             _dataLink = dataLink ?? throw new ArgumentNullException(nameof(dataLink));
         }
 
-        public List<Category> GetCategories()
+        /// <inheritdoc/> //this line is used to specify that the method is implemented from the interface
+        public List<Category> GetCategories(SqlParameter[] parameters = null)
         {
             List<Category> categories = new List<Category>();
             DataTable dataTable = null;
 
             try
             {
-                dataTable = _dataLink.ExecuteReader("GetCategories");
+                dataTable = _dataLink.ExecuteReader("GetCategories", parameters);
 
                 foreach (DataRow row in dataTable.Rows)
                 {
@@ -46,6 +48,7 @@ namespace Duo.Repositories
             return categories;
         }
 
+        /// <inheritdoc/> 
         public Category GetCategoryByName(string name)
         {
             try
@@ -72,6 +75,5 @@ namespace Duo.Repositories
                 throw new Exception($"Error fetching category '{name}': {ex.Message}");
             }
         }
-
     }
 }
