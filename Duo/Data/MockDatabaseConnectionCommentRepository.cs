@@ -18,18 +18,16 @@ namespace Duo.Data
 
         public int ExecuteNonQuery(string storedProcedure, SqlParameter[]? sqlParameters = null)
         {
-            OpenConnection();
+
 
             if (storedProcedure == "DeleteComment")
             {
                 ConvertSqlParameterToInt(sqlParameters?[0]);//if 404 SqlException 
-                CloseConnection();
                 return 1;
             }
             else
             {
                 ConvertSqlParameterToInt(sqlParameters?[0]);//if 404 SqlException 
-                CloseConnection();
                 return 1;
             }
         }

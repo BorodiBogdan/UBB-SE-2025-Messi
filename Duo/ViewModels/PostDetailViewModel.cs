@@ -51,8 +51,8 @@ namespace Duo.ViewModels
         public PostDetailViewModel()
         {
             _postService = _postService ?? App._postService;
-            _userService = _userService ?? App.userService;
             _commentService = _commentService ?? new CommentService(_commentRepository, _postRepository, _userService);
+            _userService = _userService ?? App.userService;
 
             _post = new Models.Post { 
                 Title = "",
