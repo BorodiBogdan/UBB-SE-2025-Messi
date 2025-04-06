@@ -18,15 +18,15 @@ namespace Duo.Repositories
             _dataLink = dataLink ?? throw new ArgumentNullException(nameof(dataLink));
         }
 
-        /// <inheritdoc/>
-        public List<Category> GetCategories()
+        /// <inheritdoc/> //this line is used to specify that the method is implemented from the interface
+        public List<Category> GetCategories(SqlParameter[] parameters = null)
         {
             List<Category> categories = new List<Category>();
             DataTable dataTable = null;
 
             try
             {
-                dataTable = _dataLink.ExecuteReader("GetCategories");
+                dataTable = _dataLink.ExecuteReader("GetCategories", parameters);
 
                 foreach (DataRow row in dataTable.Rows)
                 {
@@ -48,7 +48,7 @@ namespace Duo.Repositories
             return categories;
         }
 
-        /// <inheritdoc/>
+        /// <inheritdoc/> 
         public Category GetCategoryByName(string name)
         {
             try
