@@ -9,94 +9,114 @@ namespace Duo.Services
 {
     public class SearchService : ISearchService
     {
-        private const double EXACT_MATCH_FUZZY_SEARCHSCORE = 0.9;
-        private const double HIGH_SIMILARITY_FUZZY_SEARCH_SCORE = 0.8;
-        private const double FUZZY_SEARCH_SCORE_DEFAULT_THRESHOLD = 0.6;
+        // Similarity score thresholds
+        private const double EXACT_MATCH_THRESHOLD = 0.9;
+        private const double HIGH_SIMILARITY_THRESHOLD = 0.8;
+        private const double DEFAULT_SIMILARITY_THRESHOLD = 0.6;
+
+        // Tuple field names for better readability
+        private const string MATCH_TEXT_FIELD = "Text";
+        private const string MATCH_SCORE_FIELD = "Score";
 
         public double LevenshteinSimilarity(string source, string target)
         {
-            int[,] distance = new int[source.Length + 1, target.Length + 1];
+            // Initialize the distance matrix
+            int[,] distanceMatrix = new int[source.Length + 1, target.Length + 1];
 
-            for (int i = 0; i <= source.Length; i++)
-                distance[i, 0] = i;
-            for (int j = 0; j <= target.Length; j++)
-                distance[0, j] = j;
+            // Initialize first row and column
+            for (int sourceIndex = 0; sourceIndex <= source.Length; sourceIndex++)
+                distanceMatrix[sourceIndex, 0] = sourceIndex;
+            for (int targetIndex = 0; targetIndex <= target.Length; targetIndex++)
+                distanceMatrix[0, targetIndex] = targetIndex;
 
-            for (int i = 1; i <= source.Length; i++)
+            // Calculate minimum edit distance
+            for (int sourceIndex = 1; sourceIndex <= source.Length; sourceIndex++)
             {
-                for (int j = 1; j <= target.Length; j++)
+                for (int targetIndex = 1; targetIndex <= target.Length; targetIndex++)
                 {
-                    int cost = (source[i - 1] == target[j - 1]) ? 0 : 1;
+                    int substitutionCost = (source[sourceIndex - 1] == target[targetIndex - 1]) ? 0 : 1;
 
-                    distance[i, j] = Math.Min(
+                    distanceMatrix[sourceIndex, targetIndex] = Math.Min(
                         Math.Min(
-                            distance[i - 1, j] + 1,
-                            distance[i, j - 1] + 1),
-                        distance[i - 1, j - 1] + cost);
+                            distanceMatrix[sourceIndex - 1, targetIndex] + 1,     // deletion
+                            distanceMatrix[sourceIndex, targetIndex - 1] + 1),    // insertion
+                        distanceMatrix[sourceIndex - 1, targetIndex - 1] + substitutionCost); // substitution
                 }
             }
 
-            int maxLength = Math.Max(source.Length, target.Length);
-            return maxLength == 0 ? 1.0 : 1.0 - ((double)distance[source.Length, target.Length] / maxLength);
+            // Calculate similarity score
+            int maxStringLength = Math.Max(source.Length, target.Length);
+            if (maxStringLength == 0) return 1.0; // Both strings empty = perfect match
+
+            int levenshteinDistance = distanceMatrix[source.Length, target.Length];
+            return 1.0 - ((double)levenshteinDistance / maxStringLength);
         }
 
-        public List<string> FindFuzzySearchMatches(string searchQuery, IEnumerable<string> candidateStrings, double similarityThreshold = FUZZY_SEARCH_SCORE_DEFAULT_THRESHOLD)
+        public List<string> FindFuzzySearchMatches(string searchQuery, IEnumerable<string> candidateStrings, double similarityThreshold = DEFAULT_SIMILARITY_THRESHOLD)
         {
+            // Handle empty or null search query
             if (string.IsNullOrEmpty(searchQuery))
                 return new List<string>();
 
-            searchQuery = searchQuery.ToLower();
-            var matches = new List<(string Text, double Score)>();
+            // Normalize input for case-insensitive comparison
+            string normalizedQuery = searchQuery.ToLower();
+            var matchesWithScores = new List<(string Text, double Score)>();
 
             foreach (var candidate in candidateStrings)
             {
-                string candidateLower = candidate.ToLower();
-                double levenScore = LevenshteinSimilarity(searchQuery, candidateLower);
+                string normalizedCandidate = candidate.ToLower();
+                double similarityScore = LevenshteinSimilarity(normalizedQuery, normalizedCandidate);
 
-                if (levenScore >= HIGH_SIMILARITY_FUZZY_SEARCH_SCORE)
+                // Check for high similarity match
+                if (similarityScore >= HIGH_SIMILARITY_THRESHOLD)
                 {
-                    matches.Add((candidate, levenScore));
+                    matchesWithScores.Add((candidate, similarityScore));
                     continue;
                 }
 
-                if (candidateLower.Contains(searchQuery))
+                // Check for substring containment
+                if (normalizedCandidate.Contains(normalizedQuery))
                 {
-                    matches.Add((candidate, EXACT_MATCH_FUZZY_SEARCHSCORE));
+                    matchesWithScores.Add((candidate, EXACT_MATCH_THRESHOLD));
                     continue;
                 }
 
-                if (searchQuery.Contains(candidateLower))
+                // Check if query contains the candidate
+                if (normalizedQuery.Contains(normalizedCandidate))
                 {
-                    matches.Add((candidate, HIGH_SIMILARITY_FUZZY_SEARCH_SCORE));
+                    matchesWithScores.Add((candidate, HIGH_SIMILARITY_THRESHOLD));
                     continue;
                 }
 
+                // Handle multi-word candidates
                 if (candidate.Contains(" "))
                 {
-                    string[] words = candidateLower.Split(' ');
-                    foreach (var word in words)
+                    string[] candidateWords = normalizedCandidate.Split(' ');
+                    foreach (var word in candidateWords)
                     {
-                        double wordScore = LevenshteinSimilarity(searchQuery, word);
-                        if (wordScore >= similarityThreshold)
+                        double wordSimilarityScore = LevenshteinSimilarity(normalizedQuery, word);
+                        if (wordSimilarityScore >= similarityThreshold)
                         {
-                            matches.Add((candidate, wordScore));
+                            matchesWithScores.Add((candidate, wordSimilarityScore));
                             break;
                         }
                     }
                     continue;
                 }
 
-                if (levenScore >= similarityThreshold)
+                // Check against similarity threshold
+                if (similarityScore >= similarityThreshold)
                 {
-                    matches.Add((candidate, levenScore));
+                    matchesWithScores.Add((candidate, similarityScore));
                 }
             }
 
-            return matches
-                .GroupBy(m => m.Text)
-                .Select(g => g.OrderByDescending(m => m.Score).First())
-                .OrderByDescending(m => m.Score)
-                .Select(m => m.Text)
+            // Process and sort matches
+            return matchesWithScores
+                .GroupBy(match => match.Text)  // Remove duplicates
+                .Select(group => group.OrderByDescending(match => match.Score).First())  // Keep highest score
+                .OrderByDescending(match => match.Score)  // Sort by score
+                .Select(match => match.Text)  // Extract text
                 .ToList();
         }
     }
