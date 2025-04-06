@@ -2,7 +2,6 @@ using Duo.Data;
 using Duo.Models;
 using Duo.Repositories;
 using Microsoft.Data.SqlClient;
-using Moq;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -13,36 +12,16 @@ namespace TestProject1.Repositories
 {
     public class CategoryRepositoryTests
     {
-        private Mock<IDatabaseConnection> _mockDatabase;
+        private MockDatabaseConnectionCategoryRepository _mockDatabase;
         private CategoryRepository _categoryRepository;
-        private DataTable _categoryDataTable;
 
         public CategoryRepositoryTests()
         {
-            _mockDatabase = new Mock<IDatabaseConnection>();
+            // Use the custom mock implementation instead of Moq
+            _mockDatabase = new MockDatabaseConnectionCategoryRepository();
             
-            // Setup mock data table
-            _categoryDataTable = new DataTable();
-            _categoryDataTable.Columns.Add("Id", typeof(int));
-            _categoryDataTable.Columns.Add("Name", typeof(string));
-            _categoryDataTable.Rows.Add(1, "Technology");
-            _categoryDataTable.Rows.Add(2, "Science");
-            _categoryDataTable.Rows.Add(3, "Music");
-            
-            // Configure mock behavior - this is the correct setup that should be used
-            _mockDatabase.Setup(db => db.ExecuteReader("GetCategories", It.IsAny<SqlParameter[]>()))
-                .Returns(_categoryDataTable);
-                
-            _mockDatabase.Setup(db => db.ExecuteReader("GetCategoryByName", It.Is<SqlParameter[]>(p => 
-                p != null && p.Length > 0 && p[0].Value.ToString() == "Technology")))
-                .Returns(_categoryDataTable.AsEnumerable().Where(r => r.Field<string>("Name") == "Technology").CopyToDataTable());
-                
-            _mockDatabase.Setup(db => db.ExecuteReader("GetCategoryByName", It.Is<SqlParameter[]>(p => 
-                p != null && p.Length > 0 && p[0].Value.ToString() == "NonExistentCategory")))
-                .Returns(new DataTable());
-
             // Initialize repository with mock
-            _categoryRepository = new CategoryRepository(_mockDatabase.Object);
+            _categoryRepository = new CategoryRepository(_mockDatabase);
         }
 
         [Fact]
@@ -75,21 +54,15 @@ namespace TestProject1.Repositories
             var mockConsole = new MockConsole();
             Console.SetOut(mockConsole);
             
-            // Setup mock to throw exception
-            var mockDb = new Mock<IDatabaseConnection>();
-            mockDb.Setup(db => db.ExecuteReader("GetCategories", null))
-                .Throws(new Exception("Database error"));
-                
-            var repository = new CategoryRepository(mockDb.Object);
+            // Create a database exception test parameter
+            var exceptionTestParam = new SqlParameter("DatabaseExceptionTest", true);
             
             // Act
-            var result = repository.GetCategories();
+            var result = _categoryRepository.GetCategories(new SqlParameter[] { exceptionTestParam });
             
             // Assert
             Assert.NotNull(result);
             Assert.Empty(result);
-            // Note: In a real test, we would verify the console output
-            // but that's difficult to test directly
         }
 
         [Fact]
@@ -116,6 +89,110 @@ namespace TestProject1.Repositories
             // Act & Assert
             Assert.Throws<Exception>(() => _categoryRepository.GetCategoryByName(categoryName));
         }
+
+        [Fact]
+        public void MockDatabaseConnectionCategoryRepository_CloseConnection_DoesNotThrow()
+        {
+            // Arrange
+            var mockConnection = new MockDatabaseConnectionCategoryRepository();
+            
+            // Act & Assert - no exception should be thrown
+            mockConnection.CloseConnection();
+            Assert.True(true);
+        }
+        
+        [Fact]
+        public void MockDatabaseConnectionCategoryRepository_OpenConnection_DoesNotThrow()
+        {
+            // Arrange
+            var mockConnection = new MockDatabaseConnectionCategoryRepository();
+            
+            // Act & Assert - no exception should be thrown
+            mockConnection.OpenConnection();
+            Assert.True(true);
+        }
+        
+        [Fact]
+        public void MockDatabaseConnectionCategoryRepository_ExecuteNonQuery_ThrowsNotImplementedException()
+        {
+            // Arrange
+            var mockConnection = new MockDatabaseConnectionCategoryRepository();
+            
+            // Act & Assert
+            Assert.Throws<NotImplementedException>(() => mockConnection.ExecuteNonQuery("AnyProcedure"));
+        }
+        
+        [Fact]
+        public void MockDatabaseConnectionCategoryRepository_ExecuteReader_GetCategoryByName_NullParameters_ThrowsException()
+        {
+            // Arrange
+            var mockConnection = new MockDatabaseConnectionCategoryRepository();
+            
+            // Act & Assert
+            Assert.Throws<ArgumentException>(() => mockConnection.ExecuteReader("GetCategoryByName", null));
+        }
+        
+        [Fact]
+        public void MockDatabaseConnectionCategoryRepository_ExecuteReader_GetCategoryByName_EmptyParameters_ThrowsException()
+        {
+            // Arrange
+            var mockConnection = new MockDatabaseConnectionCategoryRepository();
+            
+            // Act & Assert
+            Assert.Throws<ArgumentException>(() => mockConnection.ExecuteReader("GetCategoryByName", new SqlParameter[] { }));
+        }
+        
+        [Fact]
+        public void MockDatabaseConnectionCategoryRepository_ExecuteReader_GetCategoryByName_EmptyName_ThrowsException()
+        {
+            // Arrange
+            var mockConnection = new MockDatabaseConnectionCategoryRepository();
+            var parameters = new SqlParameter[]
+            {
+                new SqlParameter("@Name", "")
+            };
+            
+            // Act & Assert
+            Assert.Throws<ArgumentException>(() => mockConnection.ExecuteReader("GetCategoryByName", parameters));
+        }
+        
+        [Fact]
+        public void MockDatabaseConnectionCategoryRepository_ExecuteReader_GetCategoryByName_NoMatchingFilters_ReturnsEmptyTable()
+        {
+            // Arrange
+            var mockConnection = new MockDatabaseConnectionCategoryRepository();
+            var parameters = new SqlParameter[]
+            {
+                new SqlParameter("@Name", "UnknownCategory") // Not in predefined conditions
+            };
+            
+            // Act
+            var result = mockConnection.ExecuteReader("GetCategoryByName", parameters);
+            
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(0, result.Rows.Count);
+        }
+        
+        [Fact]
+        public void MockDatabaseConnectionCategoryRepository_ExecuteReader_UnsupportedProcedure_ThrowsNotImplementedException()
+        {
+            // Arrange
+            var mockConnection = new MockDatabaseConnectionCategoryRepository();
+            
+            // Act & Assert
+            Assert.Throws<NotImplementedException>(() => mockConnection.ExecuteReader("UnsupportedProcedure"));
+        }
+        
+        [Fact]
+        public void MockDatabaseConnectionCategoryRepository_ExecuteScalar_ThrowsNotImplementedException()
+        {
+            // Arrange
+            var mockConnection = new MockDatabaseConnectionCategoryRepository();
+            
+            // Act & Assert
+            Assert.Throws<NotImplementedException>(() => mockConnection.ExecuteScalar<int>("AnyProcedure"));
+        }
     }
     
     // Helper class to mock Console.WriteLine for testing
@@ -127,6 +204,11 @@ namespace TestProject1.Repositories
         public override void WriteLine(string value)
         {
             Output += value + "\n";
+        }
+        
+        public override void Write(string value)
+        {
+            Output += value;
         }
     }
 } 
