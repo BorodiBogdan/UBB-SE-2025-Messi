@@ -44,9 +44,6 @@ namespace Duo.ViewModels
                     _replies.Add(new CommentViewModel(reply, repliesByParentId));
                 }
             }
-
-            // Initialize visibility states
-            UpdateVisibilityStates();
             
             ToggleRepliesCommand = new RelayCommand(ToggleReplies);
             ShowReplyFormCommand = new RelayCommand(ShowReplyForm);
@@ -77,14 +74,7 @@ namespace Duo.ViewModels
         public bool IsExpanded
         {
             get => _isExpanded;
-            set
-            {
-                if (SetProperty(ref _isExpanded, value))
-                {
-                    ToggleIconGlyph = value ? "\uE108" : "\uE109";
-                    PostDetailViewModel.CollapsedComments[Id] = !value;
-                }
-            }
+            set => SetProperty(ref _isExpanded, value);
         }
 
         public string ReplyText
@@ -99,29 +89,6 @@ namespace Duo.ViewModels
             set => SetProperty(ref _isReplyVisible, value);
         }
 
-        public bool IsDeleteButtonVisible
-        {
-            get => _isDeleteButtonVisible;
-            private set => SetProperty(ref _isDeleteButtonVisible, value);
-        }
-
-        public bool IsReplyButtonVisible
-        {
-            get => _isReplyButtonVisible;
-            private set => SetProperty(ref _isReplyButtonVisible, value);
-        }
-
-        public bool IsToggleButtonVisible
-        {
-            get => _isToggleButtonVisible;
-            private set => SetProperty(ref _isToggleButtonVisible, value);
-        }
-
-        public string ToggleIconGlyph
-        {
-            get => _toggleIconGlyph;
-            private set => SetProperty(ref _toggleIconGlyph, value);
-        }
         public void LikeComment()
         {
             _comment.IncrementLikeCount();
@@ -132,26 +99,6 @@ namespace Duo.ViewModels
         public ICommand ShowReplyFormCommand { get; }
         public ICommand CancelReplyCommand { get; }
         public ICommand LikeCommentCommand { get; }
-
-        private void UpdateVisibilityStates()
-        {
-            // Update reply button visibility based on nesting level
-            IsReplyButtonVisible = Level < MAX_NESTING_LEVEL;
-
-            // Update toggle button visibility based on replies
-            IsToggleButtonVisible = Replies != null && Replies.Count > 0;
-
-            // Update delete button visibility based on user ownership
-            try
-            {
-                var currentUser = userService.GetCurrentUser();
-                IsDeleteButtonVisible = currentUser != null && currentUser.UserId == UserId;
-            }
-            catch (Exception)
-            {
-                IsDeleteButtonVisible = false;
-            }
-        }
 
         private void ToggleReplies()
         {
