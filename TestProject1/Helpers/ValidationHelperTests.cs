@@ -510,5 +510,58 @@ namespace TestProject1.Helpers
             Assert.True(result.IsValid);
             Assert.Empty(result.ErrorMessage);
         }
+
+        [Fact]
+        public void UpdateLastErrorInfo_WhenValid_ReturnsEmptyString()
+        {
+            // Act
+            var result = ValidationHelper.UpdateLastErrorInfo(true, "error message");
+
+            // Assert
+            Assert.Equal(string.Empty, result);
+        }
+
+        [Fact]
+        public void UpdateLastErrorInfo_WhenInvalid_ReturnsErrorMessage()
+        {
+            // Arrange
+            var errorMessage = "Test error message";
+
+            // Act
+            var result = ValidationHelper.UpdateLastErrorInfo(false, errorMessage);
+
+            // Assert
+            Assert.Equal(errorMessage, result);
+        }
+
+        [Fact]
+        public void UpdateLastErrorInfo_WhenInvalidWithEmptyMessage_ReturnsEmptyString()
+        {
+            // Act
+            var result = ValidationHelper.UpdateLastErrorInfo(false, string.Empty);
+
+            // Assert
+            Assert.Equal(string.Empty, result);
+        }
+
+        [Fact]
+        public void UpdateLastErrorInfo_WhenInvalidWithNullMessage_ReturnsNull()
+        {
+            // Act
+            var result = ValidationHelper.UpdateLastErrorInfo(false, null);
+
+            // Assert
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public void UpdateLastErrorInfo_WhenValidWithNullMessage_ReturnsEmptyString()
+        {
+            // Act
+            var result = ValidationHelper.UpdateLastErrorInfo(true, null);
+
+            // Assert
+            Assert.Equal(string.Empty, result);
+        }
     }
 } 
