@@ -12,6 +12,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using static Duo.App;
+using Duo.Services.Interfaces;
 
 namespace Duo.ViewModels
 {
@@ -19,7 +20,7 @@ namespace Duo.ViewModels
     {
         private readonly PostService _postService;
         private readonly CommentService _commentService;
-        private readonly UserService _userService;
+        private readonly IUserService _userService;
         
         // Constants for validation and defaults
         private const int INVALID_ID = 0;
@@ -50,7 +51,7 @@ namespace Duo.ViewModels
         public PostDetailViewModel()
         {
             _postService = _postService ?? App._postService;
-            _commentService = _commentService ?? new CommentService(_commentRepository, _postRepository, userService);
+            _commentService = _commentService ?? new CommentService(_commentRepository, _postRepository, _userService);
             _userService = _userService ?? App.userService;
 
             _post = new Models.Post { 

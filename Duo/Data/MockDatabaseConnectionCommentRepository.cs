@@ -1,12 +1,7 @@
 ﻿using Microsoft.Data.SqlClient;
 using System;
-using System.Collections.Generic;
 using System.Data;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Moq;
-using Duo.Models;
 
 namespace Duo.Data
 {
@@ -18,31 +13,23 @@ namespace Duo.Data
 
         public void CloseConnection()
         {
-            throw new NotImplementedException();
+            //No implementation needed for mock
         }
 
         public int ExecuteNonQuery(string storedProcedure, SqlParameter[]? sqlParameters = null)
         {
 
 
-            if (storedProcedure == "AddComment")
-            {
-                //content is first so we take the second parameter
-                ConvertSqlParameterToInt(sqlParameters?[1]);//if 404 SqlException 
-                return 1;
-            }
-            else if (storedProcedure == "DeleteComment")
+            if (storedProcedure == "DeleteComment")
             {
                 ConvertSqlParameterToInt(sqlParameters?[0]);//if 404 SqlException 
                 return 1;
             }
-            else if (storedProcedure == "IncrementLikeCount")
+            else
             {
                 ConvertSqlParameterToInt(sqlParameters?[0]);//if 404 SqlException 
                 return 1;
             }
-
-            throw new NotImplementedException();
         }
 
         public DataTable ExecuteReader(string storedProcedure, SqlParameter[]? sqlParameters = null)
@@ -71,7 +58,7 @@ namespace Duo.Data
 
                 return result;
             }
-            else if (storedProcedure == "GetReplies")
+            else
             {
                 int commentId = ConvertSqlParameterToInt(sqlParameters?[0]);
 
@@ -79,8 +66,6 @@ namespace Duo.Data
                     .Where(row => row.Field<int>("ParentCommentID") == commentId)
                     .CopyToDataTable();
             }
-
-            throw new NotImplementedException();
         }
 
         public T? ExecuteScalar<T>(string storedProcedure, SqlParameter[]? sqlParameters = null)
@@ -90,7 +75,7 @@ namespace Duo.Data
                 ConvertSqlParameterToInt(sqlParameters?[1]);//if 404 SqlException
                 return (T)Convert.ChangeType(1, typeof(T));
             }
-            else if (storedProcedure == "GetCommentsCountForPost")
+            else
             {
                 ConvertSqlParameterToInt(sqlParameters?[0]);
 
@@ -100,22 +85,16 @@ namespace Duo.Data
                 int count = _mockDataTables.CommentRepositoryDataTABLE.AsEnumerable()
                     .Count(row => row.Field<int>("PostID") == postId);
                 
-                if(postId != 40)
-                    return (T)Convert.ChangeType(count, typeof(T));
+                return (T)Convert.ChangeType(count, typeof(T));
             }
-           
-                return default(T);
         }
 
         public void OpenConnection()
         {
-            throw new NotImplementedException();
+            //No implementation needed for mock
         }
         private int ConvertSqlParameterToInt(SqlParameter? param)
         {
-            if(param == null)
-                throw new ArgumentNullException(nameof(param), "SqlParameter cannot be null.");
-
             int convertedValue = param.Value?.ToString() == null ? 0 : Convert.ToInt32(param.Value.ToString());
             
             if(convertedValue == 404)

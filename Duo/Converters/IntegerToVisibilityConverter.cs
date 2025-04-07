@@ -6,13 +6,19 @@ namespace Duo.Converters
 {
     public class IntegerToVisibilityConverter : IValueConverter
     {
+        // Constants for visibility threshold
+        private const int VISIBILITY_THRESHOLD = 0;
+
         public object Convert(object value, Type targetType, object parameter, string language)
         {
-            if (value is int intValue)
+            // Check if value is an integer
+            if (value is int integerValue)
             {
-                return intValue > 0 ? Visibility.Visible : Visibility.Collapsed;
+                // Return Visible if value is greater than threshold, otherwise Collapsed
+                return integerValue > VISIBILITY_THRESHOLD ? Visibility.Visible : Visibility.Collapsed;
             }
             
+            // Return Collapsed for non-integer values
             return Visibility.Collapsed;
         }
 

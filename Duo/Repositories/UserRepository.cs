@@ -17,7 +17,6 @@ namespace Duo.Repositories
             this.dataLink = dataLink ?? throw new ArgumentNullException(nameof(dataLink));
         }
         
-        /// <inheritdoc/>
         public int CreateUser(User user)
         {
             if (user == null)
@@ -44,7 +43,6 @@ namespace Duo.Repositories
             return result ?? 0;
         }
 
-        /// <inheritdoc/>
         public User GetUserById(int id)
         {
             if (id <= 0)
@@ -77,7 +75,6 @@ namespace Duo.Repositories
             }
         }
 
-        /// <inheritdoc/>
         public User GetUserByUsername(string username)
         {
             if (string.IsNullOrWhiteSpace(username))

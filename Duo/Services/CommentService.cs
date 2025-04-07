@@ -3,16 +3,22 @@ using System.Collections.Generic;
 using Duo.Models;
 using Duo.Services;
 using Duo.Repositories;
+using Duo.Services.Interfaces;
+using Duo.Repositories.Interfaces;
 
 namespace Duo.Services
 {
-    public class CommentService
+    public class CommentService : ICommentService
     {
-        private readonly CommentRepository _commentRepository;
-        private readonly PostRepository _postRepository;
-        private readonly UserService _userService;
+        private readonly ICommentRepository _commentRepository;
+        private readonly IPostRepository _postRepository;
+        private readonly IUserService _userService;
+        private const int MINIMUM_ALLOWED_ID_NUMBER = 0;
+        private const int MAXIMUM_COMMENT_COUNT = 1000;
+        private const int MAXIMUM_COMMENT_LEVEL = 5;
 
-        public CommentService(CommentRepository commentRepository, PostRepository postRepository, UserService userService)
+
+        public CommentService(ICommentRepository commentRepository, IPostRepository postRepository, IUserService userService)
         {
             _commentRepository = commentRepository ?? throw new ArgumentNullException(nameof(commentRepository));
             _postRepository = postRepository ?? throw new ArgumentNullException(nameof(postRepository));
@@ -21,11 +27,11 @@ namespace Duo.Services
 
         public List<Comment> GetCommentsByPostId(int postId)
         {
-            if (postId <= 0) throw new ArgumentException("Invalid post ID", nameof(postId));
+            if (postId <= MINIMUM_ALLOWED_ID_NUMBER) throw new ArgumentException("Invalid post ID", nameof(postId));
 
             try
             {
-                var comments = _commentRepository.GetCommentsByPostId(postId);   
+                var comments = _commentRepository.GetCommentsByPostId(postId);
 
                 if (comments != null && comments.Count > 0)
                 {
@@ -35,7 +41,7 @@ namespace Duo.Services
                         {
                             User user = _userService.GetUserById(comment.UserId);
                             comment.Username = user.Username;
-                            
+
                         }
                         catch (Exception ex)
                         {
@@ -58,19 +64,19 @@ namespace Duo.Services
 
         public int CreateComment(string content, int postId, int? parentCommentId = null)
         {
-            if (postId <= 0) throw new ArgumentException("Invalid post ID", nameof(postId));
+            if (postId <= MINIMUM_ALLOWED_ID_NUMBER) throw new ArgumentException("Invalid post ID", nameof(postId));
             if (string.IsNullOrWhiteSpace(content)) throw new ArgumentException("Content cannot be empty", nameof(content));
 
             try
             {
                 ValidateCommentCount(postId);
 
-                int level = 1; 
+                int level = 1;
                 if (parentCommentId.HasValue)
                 {
                     var parentComment = _commentRepository.GetCommentById(parentCommentId.Value);
                     if (parentComment == null) throw new Exception("Parent comment not found");
-                    if (parentComment.Level >= 5) throw new Exception("Comment nesting limit reached");
+                    if (parentComment.Level >= MAXIMUM_COMMENT_LEVEL) throw new Exception("Comment nesting limit reached");
                     level = parentComment.Level + 1;
                 }
 
@@ -96,8 +102,8 @@ namespace Duo.Services
 
         public bool DeleteComment(int commentId, int userId)
         {
-            if (commentId <= 0) throw new ArgumentException("Invalid comment ID", nameof(commentId));
-            if (userId <= 0) throw new ArgumentException("Invalid user ID", nameof(userId));
+            if (commentId <= MINIMUM_ALLOWED_ID_NUMBER) throw new ArgumentException("Invalid comment ID", nameof(commentId));
+            if (userId <= MINIMUM_ALLOWED_ID_NUMBER) throw new ArgumentException("Invalid user ID", nameof(userId));
 
             try
             {
@@ -114,7 +120,7 @@ namespace Duo.Services
 
         public bool LikeComment(int commentId)
         {
-            if (commentId <= 0) throw new ArgumentException("Invalid comment ID", nameof(commentId));
+            if (commentId <= MINIMUM_ALLOWED_ID_NUMBER) throw new ArgumentException("Invalid comment ID", nameof(commentId));
 
             try
             {
@@ -132,14 +138,7 @@ namespace Duo.Services
             if (post == null) throw new Exception("Post not found");
 
             var commentCount = _commentRepository.GetCommentsCountForPost(postId);
-            if (commentCount >= 1000) throw new Exception("Comment limit reached");
-        }
-
-        private void ValidateCommentNestingLevel(int parentCommentId)
-        {
-            var parentComment = _commentRepository.GetCommentById(parentCommentId);
-            if (parentComment == null) throw new Exception("Parent comment not found");
-            if (parentComment.Level >= 5) throw new Exception("Comment nesting limit reached");
+            if (commentCount >= MAXIMUM_COMMENT_COUNT) throw new Exception("Comment limit reached");
         }
     }
 }
