@@ -1,30 +1,39 @@
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Data;
-using System.Linq;
-using Microsoft.Data.SqlClient;
-using Duo.Models;
-using Duo.Data;
-using Duo.Repositories.Interfaces;
+// <copyright file="PostRepository.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
 
 namespace Duo.Repositories
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Collections.ObjectModel;
+    using System.Data;
+    using System.Linq;
+    using Duo.Data;
+    using Duo.Models;
+    using Duo.Repositories.Interfaces;
+    using Microsoft.Data.SqlClient;
+
+    /// <inheritdoc/>
     public class PostRepository : IPostRepository
     {
-        private readonly IDatabaseConnection _databaseConnection;
-        
-        // Constants for validation
-        private const int INVALID_ID = 0;
-        private const int MIN_PAGE_NUMBER = 1;
-        private const int MIN_PAGE_SIZE = 1;
-        private const int DEFAULT_COUNT = 0;
+        private const int INVALIDID = 0;
+        private const int MINPAGENUMBER = 1;
+        private const int MINPAGESIZE = 1;
+        private const int DEFAULTCOUNT = 0;
+        private readonly IDatabaseConnection databaseConnection;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PostRepository"/> class.
+        /// </summary>
+        /// <param name="databaseConnection">The database connection instance used for database operations.</param>
+        /// <exception cref="ArgumentNullException">Thrown when databaseConnection is null.</exception>
         public PostRepository(IDatabaseConnection databaseConnection)
         {
-            this._databaseConnection = databaseConnection ?? throw new ArgumentNullException(nameof(databaseConnection));
+            this.databaseConnection = databaseConnection ?? throw new ArgumentNullException(nameof(databaseConnection));
         }
 
+        /// <inheritdoc/>
         public int CreatePost(Post postToCreate)
         {
             if (postToCreate == null)
@@ -37,7 +46,7 @@ namespace Duo.Repositories
                 throw new ArgumentException("Title and Description cannot be empty.");
             }
 
-            if (postToCreate.UserID <= INVALID_ID || postToCreate.CategoryID <= INVALID_ID)
+            if (postToCreate.UserID <= INVALIDID || postToCreate.CategoryID <= INVALIDID)
             {
                 throw new ArgumentException("Invalid UserID or CategoryID.");
             }
@@ -50,12 +59,12 @@ namespace Duo.Repositories
                 new SqlParameter("@CategoryID", postToCreate.CategoryID),
                 new SqlParameter("@CreatedAt", postToCreate.CreatedAt),
                 new SqlParameter("@UpdatedAt", postToCreate.UpdatedAt),
-                new SqlParameter("@LikeCount", postToCreate.LikeCount)
+                new SqlParameter("@LikeCount", postToCreate.LikeCount),
             };
 
             try
             {
-                int? postId = _databaseConnection.ExecuteScalar<int>("CreatePost", postParameters);
+                int? postId = this.databaseConnection.ExecuteScalar<int>("CreatePost", postParameters);
 
                 return postId.Value;
 
@@ -66,21 +75,23 @@ namespace Duo.Repositories
             }
         }
 
+        /// <inheritdoc/>
         public void DeletePost(int postId)
         {
-            if (postId <= INVALID_ID)
+            if (postId <= INVALIDID)
             {
                 throw new ArgumentException("Invalid post ID.");
             }
 
             SqlParameter[] deleteParameters = new SqlParameter[]
             {
-                new SqlParameter("@Id", postId)
+                new SqlParameter("@Id", postId),
             };
 
-            _databaseConnection.ExecuteNonQuery("DeletePost", deleteParameters);
+            this.databaseConnection.ExecuteNonQuery("DeletePost", deleteParameters);
         }
 
+        /// <inheritdoc/>
         public void UpdatePost(Post postToUpdate)
         {
             if (postToUpdate == null)
@@ -88,7 +99,7 @@ namespace Duo.Repositories
                 throw new ArgumentNullException(nameof(postToUpdate), "Post cannot be null.");
             }
 
-            if (postToUpdate.Id <= INVALID_ID)
+            if (postToUpdate.Id <= INVALIDID)
             {
                 throw new ArgumentException("Invalid post ID.");
             }
@@ -106,27 +117,28 @@ namespace Duo.Repositories
                 new SqlParameter("@UserID", postToUpdate.UserID),
                 new SqlParameter("@CategoryID", postToUpdate.CategoryID),
                 new SqlParameter("@UpdatedAt", postToUpdate.UpdatedAt),
-                new SqlParameter("@LikeCount", postToUpdate.LikeCount)
+                new SqlParameter("@LikeCount", postToUpdate.LikeCount),
             };
 
-            _databaseConnection.ExecuteNonQuery("UpdatePost", updateParameters);
+            this.databaseConnection.ExecuteNonQuery("UpdatePost", updateParameters);
         }
 
+        /// <inheritdoc/>
         public Post? GetPostById(int postId)
         {
-            if (postId <= INVALID_ID)
+            if (postId <= INVALIDID)
             {
                 throw new ArgumentException("Invalid post ID.");
             }
 
             SqlParameter[] queryParameters = new SqlParameter[]
             {
-                new SqlParameter("@Id", postId)
+                new SqlParameter("@Id", postId),
             };
 
-            DataTable postDataTable = _databaseConnection.ExecuteReader("GetPostById", queryParameters);
+            DataTable postDataTable = this.databaseConnection.ExecuteReader("GetPostById", queryParameters);
 
-            if (postDataTable.Rows.Count > DEFAULT_COUNT)
+            if (postDataTable.Rows.Count > DEFAULTCOUNT)
             {
                 DataRow postRow = postDataTable.Rows[0];
                 return new Post
@@ -138,40 +150,41 @@ namespace Duo.Repositories
                     CategoryID = Convert.ToInt32(postRow["CategoryID"]),
                     CreatedAt = Convert.ToDateTime(postRow["CreatedAt"]),
                     UpdatedAt = Convert.ToDateTime(postRow["UpdatedAt"]),
-                    LikeCount = Convert.ToInt32(postRow["LikeCount"])
+                    LikeCount = Convert.ToInt32(postRow["LikeCount"]),
                 };
             }
 
             return null;
         }
 
+        /// <inheritdoc/>
         public Collection<Post> GetPostsByCategoryId(int categoryId, int pageNumber, int pageSize)
         {
-            if (categoryId <= INVALID_ID)
+            if (categoryId <= INVALIDID)
             {
                 throw new ArgumentException("Invalid category ID.");
             }
 
-            if (pageNumber <= INVALID_ID)
+            if (pageNumber <= INVALIDID)
             {
                 throw new ArgumentException("Page number must be greater than 0.");
             }
 
-            if (pageSize <= INVALID_ID)
+            if (pageSize <= INVALIDID)
             {
                 throw new ArgumentException("Page size must be greater than 0.");
             }
 
-            int offsetRows = (pageNumber - MIN_PAGE_NUMBER) * pageSize;
+            int offsetRows = (pageNumber - MINPAGENUMBER) * pageSize;
 
             SqlParameter[] categoryParameters = new SqlParameter[]
             {
                 new SqlParameter("@CategoryID", categoryId),
                 new SqlParameter("@PageSize", pageSize),
-                new SqlParameter("@Offset", offsetRows)
+                new SqlParameter("@Offset", offsetRows),
             };
 
-            DataTable categoryPostsTable = _databaseConnection.ExecuteReader("GetPostsByCategory", categoryParameters);
+            DataTable categoryPostsTable = this.databaseConnection.ExecuteReader("GetPostsByCategory", categoryParameters);
             List<Post> categoryPosts = new List<Post>();
 
             foreach (DataRow postRow in categoryPostsTable.Rows)
@@ -185,24 +198,25 @@ namespace Duo.Repositories
                     CategoryID = Convert.ToInt32(postRow["CategoryID"]),
                     CreatedAt = Convert.ToDateTime(postRow["CreatedAt"]),
                     UpdatedAt = Convert.ToDateTime(postRow["UpdatedAt"]),
-                    LikeCount = Convert.ToInt32(postRow["LikeCount"])
+                    LikeCount = Convert.ToInt32(postRow["LikeCount"]),
                 });
             }
 
             return new Collection<Post>(categoryPosts);
         }
 
+        /// <inheritdoc/>
         public List<string> GetAllPostTitles()
         {
             var postTitles = new List<string>();
 
             try
             {
-                DataTable titlesTable = _databaseConnection.ExecuteReader("GetAllPostTitles", null);
+                DataTable titlesTable = this.databaseConnection.ExecuteReader("GetAllPostTitles", null);
 
                 foreach (DataRow titleRow in titlesTable.Rows)
                 {
-                    postTitles.Add(titleRow["Title"].ToString());
+                    postTitles.Add(titleRow["Title"]?.ToString() ?? string.Empty);
                 }
 
                 return postTitles;
@@ -214,16 +228,17 @@ namespace Duo.Repositories
             }
         }
 
+        /// <inheritdoc/>
         public List<Post> GetPostsByTitle(string searchTitle)
         {
             SqlParameter[] titleParameters = new SqlParameter[]
             {
-                new SqlParameter("@Title", searchTitle)
+                new SqlParameter("@Title", searchTitle),
             };
 
             try
             {
-                DataTable matchingPostsTable = _databaseConnection.ExecuteReader("GetPostsByTitle", titleParameters);
+                DataTable matchingPostsTable = this.databaseConnection.ExecuteReader("GetPostsByTitle", titleParameters);
                 List<Post> matchingPosts = new List<Post>();
 
                 foreach (DataRow postRow in matchingPostsTable.Rows)
@@ -237,7 +252,7 @@ namespace Duo.Repositories
                         CategoryID = Convert.ToInt32(postRow["CategoryID"]),
                         CreatedAt = Convert.ToDateTime(postRow["CreatedAt"]),
                         UpdatedAt = Convert.ToDateTime(postRow["UpdatedAt"]),
-                        LikeCount = Convert.ToInt32(postRow["LikeCount"])
+                        LikeCount = Convert.ToInt32(postRow["LikeCount"]),
                     });
                 }
 
@@ -250,18 +265,19 @@ namespace Duo.Repositories
             }
         }
 
+        /// <inheritdoc/>
         public int? GetUserIdByPostId(int postId)
         {
             SqlParameter[] userIdParameters = new SqlParameter[]
             {
-                new SqlParameter("@PostId", postId)
+                new SqlParameter("@PostId", postId),
             };
 
             try
             {
-                DataTable userDataTable = _databaseConnection.ExecuteReader("GetUserIdByPostId", userIdParameters);
+                DataTable userDataTable = this.databaseConnection.ExecuteReader("GetUserIdByPostId", userIdParameters);
 
-                if (userDataTable.Rows.Count > DEFAULT_COUNT)
+                if (userDataTable.Rows.Count > DEFAULTCOUNT)
                 {
                     DataRow userRow = userDataTable.Rows[0];
                     return Convert.ToInt32(userRow["UserId"]);
@@ -275,18 +291,19 @@ namespace Duo.Repositories
             }
         }
 
+        /// <inheritdoc/>
         public List<Post> GetPostsByUserId(int userId, int pageNumber, int pageSize)
         {
             SqlParameter[] userParameters = new SqlParameter[]
             {
                 new SqlParameter("@UserID", userId),
                 new SqlParameter("@PageSize", pageSize),
-                new SqlParameter("@Offset", pageNumber)
+                new SqlParameter("@Offset", pageNumber),
             };
 
             try
             {
-                DataTable userPostsTable = _databaseConnection.ExecuteReader("GetPostsByUser", userParameters);
+                DataTable userPostsTable = this.databaseConnection.ExecuteReader("GetPostsByUser", userParameters);
                 List<Post> userPosts = new List<Post>();
 
                 foreach (DataRow postRow in userPostsTable.Rows)
@@ -300,7 +317,7 @@ namespace Duo.Repositories
                         CategoryID = Convert.ToInt32(postRow["CategoryID"]),
                         CreatedAt = Convert.ToDateTime(postRow["CreatedAt"]),
                         UpdatedAt = Convert.ToDateTime(postRow["UpdatedAt"]),
-                        LikeCount = Convert.ToInt32(postRow["LikeCount"])
+                        LikeCount = Convert.ToInt32(postRow["LikeCount"]),
                     });
                 }
 
@@ -312,36 +329,36 @@ namespace Duo.Repositories
             }
         }
 
+        /// <inheritdoc/>
         public List<Post> GetPostsByHashtags(List<string> hashtags, int pageNumber, int pageSize)
         {
-            if (hashtags == null || hashtags.Count == DEFAULT_COUNT)
+            if (hashtags == null || hashtags.Count == DEFAULTCOUNT)
             {
-                return GetPaginatedPosts(pageNumber, pageSize);
+                return this.GetPaginatedPosts(pageNumber, pageSize);
             }
 
             List<string> filteredHashtags = hashtags
                 .Where(h => !string.IsNullOrWhiteSpace(h))
                 .Select(h => h.Trim().ToLowerInvariant())
                 .ToList();
-            
             string hashtagsString = string.Join(",", filteredHashtags);
-            int offsetRows = (pageNumber - MIN_PAGE_NUMBER) * pageSize;
+            int offsetRows = (pageNumber - MINPAGENUMBER) * pageSize;
 
-            if (string.IsNullOrWhiteSpace(hashtagsString) || filteredHashtags.Count == DEFAULT_COUNT)
+            if (string.IsNullOrWhiteSpace(hashtagsString) || filteredHashtags.Count == DEFAULTCOUNT)
             {
-                return GetPaginatedPosts(pageNumber, pageSize);
+                return this.GetPaginatedPosts(pageNumber, pageSize);
             }
 
             SqlParameter[] hashtagParameters = new SqlParameter[]
             {
                 new SqlParameter("@Hashtags", hashtagsString),
                 new SqlParameter("@PageSize", pageSize),
-                new SqlParameter("@Offset", offsetRows)
+                new SqlParameter("@Offset", offsetRows),
             };
 
             try
             {
-                DataTable hashtagPostsTable = _databaseConnection.ExecuteReader("GetByHashtags", hashtagParameters);
+                DataTable hashtagPostsTable = this.databaseConnection.ExecuteReader("GetByHashtags", hashtagParameters);
                 List<Post> hashtagPosts = new List<Post>();
 
                 foreach (DataRow postRow in hashtagPostsTable.Rows)
@@ -355,7 +372,7 @@ namespace Duo.Repositories
                         CategoryID = Convert.ToInt32(postRow["CategoryID"]),
                         CreatedAt = Convert.ToDateTime(postRow["CreatedAt"]),
                         UpdatedAt = Convert.ToDateTime(postRow["UpdatedAt"]),
-                        LikeCount = Convert.ToInt32(postRow["LikeCount"])
+                        LikeCount = Convert.ToInt32(postRow["LikeCount"]),
                     });
                 }
 
@@ -367,21 +384,22 @@ namespace Duo.Repositories
             }
         }
 
+        /// <inheritdoc/>
         public bool IncrementPostLikeCount(int postId)
         {
-            if (postId <= INVALID_ID)
+            if (postId <= INVALIDID)
             {
                 throw new ArgumentException("Invalid post ID.");
             }
 
             SqlParameter[] likeParameters = new SqlParameter[]
             {
-                new SqlParameter("@PostID", postId)
+                new SqlParameter("@PostID", postId),
             };
 
             try
             {
-                _databaseConnection.ExecuteNonQuery("IncrementPostLikeCount", likeParameters);
+                this.databaseConnection.ExecuteNonQuery("IncrementPostLikeCount", likeParameters);
                 return true;
             }
             catch (Exception ex)
@@ -390,29 +408,30 @@ namespace Duo.Repositories
             }
         }
 
+        /// <inheritdoc/>
         public List<Post> GetPaginatedPosts(int pageNumber, int pageSize)
         {
-            if (pageNumber <= INVALID_ID)
+            if (pageNumber <= INVALIDID)
             {
                 throw new ArgumentException("Page number must be greater than 0.");
             }
 
-            if (pageSize <= INVALID_ID)
+            if (pageSize <= INVALIDID)
             {
                 throw new ArgumentException("Page size must be greater than 0.");
             }
 
-            int offsetRows = (pageNumber - MIN_PAGE_NUMBER) * pageSize;
+            int offsetRows = (pageNumber - MINPAGENUMBER) * pageSize;
 
             SqlParameter[] paginationParameters = new SqlParameter[]
             {
                 new SqlParameter("@PageSize", pageSize),
-                new SqlParameter("@Offset", offsetRows)
+                new SqlParameter("@Offset", offsetRows),
             };
 
             try
             {
-                DataTable paginatedPostsTable = _databaseConnection.ExecuteReader("GetPaginatedPosts", paginationParameters);
+                DataTable paginatedPostsTable = this.databaseConnection.ExecuteReader("GetPaginatedPosts", paginationParameters);
                 List<Post> paginatedPosts = new List<Post>();
 
                 foreach (DataRow postRow in paginatedPostsTable.Rows)
@@ -426,7 +445,7 @@ namespace Duo.Repositories
                         CategoryID = Convert.ToInt32(postRow["CategoryID"]),
                         CreatedAt = Convert.ToDateTime(postRow["CreatedAt"]),
                         UpdatedAt = Convert.ToDateTime(postRow["UpdatedAt"]),
-                        LikeCount = Convert.ToInt32(postRow["LikeCount"])
+                        LikeCount = Convert.ToInt32(postRow["LikeCount"]),
                     });
                 }
 
@@ -438,12 +457,13 @@ namespace Duo.Repositories
             }
         }
 
+        /// <inheritdoc/>
         public int GetTotalPostCount()
         {
             try
             {
-                object totalCountResult = _databaseConnection.ExecuteScalar<int>("GetTotalPostCount");
-                return totalCountResult != null ? Convert.ToInt32(totalCountResult) : DEFAULT_COUNT;
+                object totalCountResult = this.databaseConnection.ExecuteScalar<int>("GetTotalPostCount");
+                return totalCountResult != null ? Convert.ToInt32(totalCountResult) : DEFAULTCOUNT;
             }
             catch (Exception ex)
             {
@@ -451,22 +471,23 @@ namespace Duo.Repositories
             }
         }
 
+        /// <inheritdoc/>
         public int GetPostCountByCategory(int categoryId)
         {
-            if (categoryId <= INVALID_ID)
+            if (categoryId <= INVALIDID)
             {
                 throw new ArgumentException("Invalid category ID.");
             }
 
             SqlParameter[] categoryParameters = new SqlParameter[]
             {
-                new SqlParameter("@CategoryID", categoryId)
+                new SqlParameter("@CategoryID", categoryId),
             };
 
             try
             {
-                object categoryCountResult = _databaseConnection.ExecuteScalar<int>("GetPostCountByCategory", categoryParameters);
-                return categoryCountResult != null ? Convert.ToInt32(categoryCountResult) : DEFAULT_COUNT;
+                object categoryCountResult = this.databaseConnection.ExecuteScalar<int>("GetPostCountByCategory", categoryParameters);
+                return categoryCountResult != null ? Convert.ToInt32(categoryCountResult) : DEFAULTCOUNT;
             }
             catch (Exception ex)
             {
@@ -474,11 +495,12 @@ namespace Duo.Repositories
             }
         }
 
+        /// <inheritdoc/>
         public int GetPostCountByHashtags(List<string> hashtags)
         {
-            if (hashtags == null || hashtags.Count == DEFAULT_COUNT)
+            if (hashtags == null || hashtags.Count == DEFAULTCOUNT)
             {
-                return GetTotalPostCount();
+                return this.GetTotalPostCount();
             }
 
             List<string> filteredHashtags = hashtags
@@ -486,22 +508,22 @@ namespace Duo.Repositories
                 .Select(h => h.Trim().ToLowerInvariant())
                 .ToList();
 
-            if (filteredHashtags.Count == DEFAULT_COUNT)
+            if (filteredHashtags.Count == DEFAULTCOUNT)
             {
-                return GetTotalPostCount();
+                return this.GetTotalPostCount();
             }
 
             string hashtagsString = string.Join(",", filteredHashtags);
 
             SqlParameter[] hashtagParameters = new SqlParameter[]
             {
-                new SqlParameter("@Hashtags", hashtagsString)
+                new SqlParameter("@Hashtags", hashtagsString),
             };
 
             try
             {
-                object hashtagCountResult = _databaseConnection.ExecuteScalar<int>("GetPostCountByHashtags", hashtagParameters);
-                return hashtagCountResult != null ? Convert.ToInt32(hashtagCountResult) : DEFAULT_COUNT;
+                object hashtagCountResult = this.databaseConnection.ExecuteScalar<int>("GetPostCountByHashtags", hashtagParameters);
+                return hashtagCountResult != null ? Convert.ToInt32(hashtagCountResult) : DEFAULTCOUNT;
             }
             catch (Exception ex)
             {

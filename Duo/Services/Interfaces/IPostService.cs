@@ -34,5 +34,6 @@ namespace Duo.Services.Interfaces
             int currentPage,
             int itemsPerPage);
         HashSet<string> ToggleHashtagSelection(HashSet<string> currentHashtags, string hashtagToToggle, string allHashtagsFilter);
+        void AddAllHashtagsToPost(int createdPostId, string[] hashtags, int currentUserId);
     }
 } 
