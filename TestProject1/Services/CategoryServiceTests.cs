@@ -129,6 +129,90 @@ namespace TestProject1.Services
             _mockCategoryRepository.Verify(repo => repo.GetCategoryByName(VALID_CATEGORY_NAME), Times.Once);
         }
 
+        [Fact]
+        public void GetCategoryByName_EmptyName_ThrowsArgumentException()
+        {
+            // Arrange
+            var mockRepo = new Mock<ICategoryRepository>();
+            var service = new CategoryService(mockRepo.Object);
+
+            // Act & Assert
+            Assert.Throws<ArgumentException>(() => service.GetCategoryByName(string.Empty));
+        }
+
+        [Fact]
+        public void GetCategoryNames_ReturnsCorrectList()
+        {
+            // Arrange
+            var mockRepo = new Mock<ICategoryRepository>();
+            var list = new List<Category>
+            {
+                new Category(1, "Category1"),
+                new Category(2, "Category2")
+            };
+            
+            mockRepo.Setup(x => x.GetCategories(It.IsAny<SqlParameter[]>()))
+                   .Returns(list);
+            var service = new CategoryService(mockRepo.Object);
+
+            // Act
+            var result = service.GetCategoryNames();
+
+            // Assert
+            Assert.Equal(2, result.Count);
+            Assert.Contains("Category1", result);
+            Assert.Contains("Category2", result);
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        public void IsValidCategoryName_NullOrEmpty_ReturnsFalse(string name)
+        {
+            // Arrange
+            var mockRepo = new Mock<ICategoryRepository>();
+            var service = new CategoryService(mockRepo.Object);
+
+            // Act
+            var result = service.IsValidCategoryName(name);
+
+            // Assert
+            Assert.False(result);
+        }
+
+        [Fact]
+        public void IsValidCategoryName_ExistingCategory_ReturnsTrue()
+        {
+            // Arrange
+            var mockRepo = new Mock<ICategoryRepository>();
+            var category = new Category(1, "TestCategory");
+            mockRepo.Setup(x => x.GetCategoryByName("TestCategory"))
+                   .Returns(category);
+            var service = new CategoryService(mockRepo.Object);
+
+            // Act
+            var result = service.IsValidCategoryName("TestCategory");
+
+            // Assert
+            Assert.True(result);
+        }
+
+        [Fact]
+        public void IsValidCategoryName_NonExistentCategory_ReturnsFalse()
+        {
+            // Arrange
+            var mockRepo = new Mock<ICategoryRepository>();
+            mockRepo.Setup(x => x.GetCategoryByName("NonExistent"))
+                   .Returns((Category)null);
+            var service = new CategoryService(mockRepo.Object);
+
+            // Act
+            var result = service.IsValidCategoryName("NonExistent");
+
+            // Assert
+            Assert.False(result);
+        }
+
         #endregion
     }
 }
