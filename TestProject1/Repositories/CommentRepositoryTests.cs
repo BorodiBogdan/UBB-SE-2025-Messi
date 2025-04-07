@@ -11,8 +11,9 @@ namespace TestMessi.Repositories
 {
     public class CommentRepositoryTests
     {
+        const int ERROR_CODE = 404;
         private IDatabaseConnection _dataLinkMock;
-
+        
         public CommentRepositoryTests()
         {
             // This is executed before each test (like TestInitialize in MSTest)
@@ -44,7 +45,7 @@ namespace TestMessi.Repositories
         public void void_GetCommentById_ThrowsExceptionAfterSqlFailure()
         {
             var commentRepository = new CommentRepository(_dataLinkMock);
-            Assert.Throws<Exception>(() => commentRepository.GetCommentById(404));
+            Assert.Throws<Exception>(() => commentRepository.GetCommentById(ERROR_CODE));
         }
         [Fact]
         public void GetCommentById_ThrowsException()
@@ -83,7 +84,7 @@ namespace TestMessi.Repositories
         public void GetCommentsById_ThrowsExceptionAfterSqlFailure()
         {
             var commentRepository = new CommentRepository(_dataLinkMock);
-            Assert.Throws<Exception>(() => commentRepository.GetCommentsByPostId(404));
+            Assert.Throws<Exception>(() => commentRepository.GetCommentsByPostId(ERROR_CODE));
         }
         [Fact]
         public void CreateComment_ReturnsInt()
@@ -110,7 +111,7 @@ namespace TestMessi.Repositories
             var comment = new Comment
             {
                 Content = "Test comment",
-                UserId = 404,
+                UserId = ERROR_CODE,
                 PostId = 1,
                 ParentCommentId = null,
                 CreatedAt = DateTime.Now,
@@ -131,7 +132,7 @@ namespace TestMessi.Repositories
         public void DeleteComment_ThrowsExceptionAfterSqlFailure()
         {
             var commentRepository = new CommentRepository(_dataLinkMock);
-            Assert.Throws<Exception>(() => commentRepository.DeleteComment(404));
+            Assert.Throws<Exception>(() => commentRepository.DeleteComment(ERROR_CODE));
         }
         [Fact]
         public void DeleteComment_ThrowsException()
@@ -159,7 +160,7 @@ namespace TestMessi.Repositories
         public void GetRepliesByCommentId_ThrowsExceptionAfterSqlFailure()
         {
             var commentRepository = new CommentRepository(_dataLinkMock);
-            Assert.Throws<Exception>(() => commentRepository.GetRepliesByCommentId(404));
+            Assert.Throws<Exception>(() => commentRepository.GetRepliesByCommentId(ERROR_CODE));
         }
 
         [Fact]
@@ -173,7 +174,7 @@ namespace TestMessi.Repositories
         public void IncrementLikeCount_ThrowsExceptionAfterSqlFailure()
         {
             var commentRepository = new CommentRepository(_dataLinkMock);
-            Assert.Throws<Exception>(() => commentRepository.IncrementLikeCount(404));
+            Assert.Throws<Exception>(() => commentRepository.IncrementLikeCount(ERROR_CODE));
         }
         [Fact]
         public void IncrementLikeCount_ThrowsException()
@@ -194,7 +195,7 @@ namespace TestMessi.Repositories
         public void GetCommentsCountForPost_ThrowsExceptionAfterSqlFailure()
         {
             var commentRepository = new CommentRepository(_dataLinkMock);
-            Assert.Throws<Exception>(() => commentRepository.GetCommentsCountForPost(404));
+            Assert.Throws<Exception>(() => commentRepository.GetCommentsCountForPost(ERROR_CODE));
         }
         [Fact]
         public void GetCommentsCountForPost_ThrowsException()
