@@ -12,14 +12,15 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using static Duo.App;
+using Duo.Services.Interfaces;
 
 namespace Duo.ViewModels
 {
     public class PostDetailViewModel : ViewModelBase
     {
-        private readonly PostService _postService;
-        private readonly CommentService _commentService;
-        private readonly UserService _userService;
+        private readonly IPostService _postService;
+        private readonly ICommentService _commentService;
+        private readonly IUserService _userService;
         private Models.Post _post;
         private ObservableCollection<CommentViewModel> _commentViewModels;
         private ObservableCollection<Models.Comment> _comments;

@@ -13,6 +13,7 @@ using System.Collections.ObjectModel;
 using Duo.Views.Components;
 using System.Threading.Tasks;
 using Duo.Helpers;
+using Duo.Services.Interfaces;
 
 namespace Duo.ViewModels
 {
@@ -36,9 +37,9 @@ namespace Duo.ViewModels
         private const string EMPTY_STRING = "";
         
         // Services
-        private readonly PostService _postService;
-        private readonly CategoryService _categoryService;
-        private readonly UserService _userService;
+        private readonly IPostService _postService;
+        private readonly ICategoryService _categoryService;
+        private readonly IUserService _userService;
 
         // Properties
         private string _postTitle = string.Empty;
