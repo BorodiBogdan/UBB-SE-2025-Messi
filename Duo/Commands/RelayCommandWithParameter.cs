@@ -21,8 +21,8 @@ namespace Duo.Commands
             if (_canExecute == null)
                 return true;
 
-            if (parameter == null && typeof(T).IsValueType)
-                return false;
+            //if (parameter == null && typeof(T).IsValueType)
+               // return false;
 
             return _canExecute((T)parameter);
         }
