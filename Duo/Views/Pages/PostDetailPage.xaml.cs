@@ -136,6 +136,7 @@ namespace Duo.Views.Pages
         private void CommentComponent_CommentDeleted(object sender, CommentDeletedEventArgs e)
         {
             ViewModel.DeleteComment(e.CommentId);
+            RenderComments();
         }
     }
 }

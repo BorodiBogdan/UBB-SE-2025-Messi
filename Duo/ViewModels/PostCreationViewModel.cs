@@ -41,12 +41,12 @@ namespace Duo.ViewModels
         private readonly UserService _userService;
 
         // Properties
-        private string _title = string.Empty;
-        private string _content = string.Empty;
+        private string _postTitle = string.Empty;
+        private string _postContent = string.Empty;
         private int _selectedCategoryId;
-        private ObservableCollection<string> _hashtags = new ObservableCollection<string>();
-        private ObservableCollection<CommunityItem> _communities = new ObservableCollection<CommunityItem>();
-        private string _error = string.Empty;
+        private ObservableCollection<string> _postHashtags = new ObservableCollection<string>();
+        private ObservableCollection<CommunityItem> _postCommunities = new ObservableCollection<CommunityItem>();
+        private string _lastError = string.Empty;
         private bool _isLoading;
         private bool _isSuccess;
 
@@ -63,20 +63,20 @@ namespace Duo.ViewModels
 
         public string Title
         {
-            get => _title;
+            get => _postTitle;
             set
             {
-                if (_title != value)
+                if (_postTitle != value)
                 {
-                    _title = value;
+                    _postTitle = value;
                     var (isValid, errorMessage) = ValidationHelper.ValidatePostTitle(value);
                     if (!isValid)
                     {
-                        Error = errorMessage;
+                        LastError = errorMessage;
                     }
                     else
                     {
-                        Error = EMPTY_STRING;
+                        LastError = EMPTY_STRING;
                     }
                     OnPropertyChanged();
                 }
@@ -85,20 +85,20 @@ namespace Duo.ViewModels
 
         public string Content
         {
-            get => _content;
+            get => _postContent;
             set
             {
-                if (_content != value)
+                if (_postContent != value)
                 {
-                    _content = value;
+                    _postContent = value;
                     var (isValid, errorMessage) = ValidationHelper.ValidatePostContent(value);
                     if (!isValid)
                     {
-                        Error = errorMessage;
+                        LastError = errorMessage;
                     }
                     else
                     {
-                        Error = EMPTY_STRING;
+                        LastError = EMPTY_STRING;
                     }
                     OnPropertyChanged();
                 }
@@ -119,18 +119,18 @@ namespace Duo.ViewModels
             }
         }
 
-        public ObservableCollection<string> Hashtags => _hashtags;
+        public ObservableCollection<string> Hashtags => _postHashtags;
 
-        public ObservableCollection<CommunityItem> Communities => _communities;
+        public ObservableCollection<CommunityItem> Communities => _postCommunities;
 
-        public string Error
+        public string LastError
         {
-            get => _error;
+            get => _lastError;
             set
             {
-                if (_error != value)
+                if (_lastError != value)
                 {
-                    _error = value;
+                    _lastError = value;
                     OnPropertyChanged();
                 }
             }
@@ -186,25 +186,25 @@ namespace Duo.ViewModels
         {
             if (string.IsNullOrWhiteSpace(Title) || string.IsNullOrWhiteSpace(Content))
             {
-                Error = "Title and content are required.";
+                LastError = "Title and content are required.";
                 return;
             }
 
             var (isTitleValid, titleError) = ValidationHelper.ValidatePostTitle(Title);
             if (!isTitleValid)
             {
-                Error = titleError;
+                LastError = titleError;
                 return;
             }
 
             if (SelectedCategoryId <= INVALID_ID)
             {
-                Error = "Please select a community for your post.";
+                LastError = "Please select a community for your post.";
                 return;
             }
 
             IsLoading = true;
-            Error = EMPTY_STRING;
+            LastError = EMPTY_STRING;
 
             try
             {
@@ -252,7 +252,7 @@ namespace Duo.ViewModels
             catch (Exception postCreationException)
             {
                 Debug.WriteLine($"Error creating post: {postCreationException.Message}");
-                Error = $"Failed to create post: {postCreationException.Message}";
+                LastError = $"Failed to create post: {postCreationException.Message}";
                 IsSuccess = false;
             }
             finally
@@ -291,7 +291,7 @@ namespace Duo.ViewModels
             
             // Create the post
             IsLoading = true;
-            Error = EMPTY_STRING;
+            LastError = EMPTY_STRING;
 
             try
             {
@@ -316,7 +316,7 @@ namespace Duo.ViewModels
                 Hashtags.Clear();
                 foreach (var hashtagText in processedHashtags)
                 {
-                    _hashtags.Add(hashtagText);
+                    _postHashtags.Add(hashtagText);
                 }
                 
                 // Handle success
@@ -328,7 +328,7 @@ namespace Duo.ViewModels
             catch (Exception postCreationException)
             {
                 System.Diagnostics.Debug.WriteLine($"Error creating post: {postCreationException.Message}");
-                Error = $"Failed to create post: {postCreationException.Message}";
+                LastError = $"Failed to create post: {postCreationException.Message}";
                 IsSuccess = false;
                 return false;
             }
@@ -352,7 +352,7 @@ namespace Duo.ViewModels
             if (!Hashtags.Contains(trimmedHashtag))
             {
                 // Add directly to the collection
-                _hashtags.Add(trimmedHashtag);
+                _postHashtags.Add(trimmedHashtag);
                 
                 // Debug output
                 System.Diagnostics.Debug.WriteLine($"Added hashtag to ViewModel: {trimmedHashtag}, Count now: {Hashtags.Count}");
@@ -392,7 +392,7 @@ namespace Duo.ViewModels
             SelectedCategoryId = INVALID_ID;
             Hashtags.Clear();
             UpdateSelectedCommunity();
-            Error = EMPTY_STRING;
+            LastError = EMPTY_STRING;
             IsSuccess = false;
         }
 
@@ -403,10 +403,10 @@ namespace Duo.ViewModels
         {
             try
             {
-                var categories = _categoryService.GetAllCategories();
+                var allCategories = _categoryService.GetAllCategories();
                 
                 Communities.Clear();
-                foreach (var category in categories)
+                foreach (var category in allCategories)
                 {
                     Communities.Add(new CommunityItem
                     {
@@ -419,7 +419,7 @@ namespace Duo.ViewModels
             catch (Exception ex)
             {
                 Debug.WriteLine($"Error loading communities: {ex.Message}");
-                Error = $"Failed to load communities: {ex.Message}";
+                LastError = $"Failed to load communities: {ex.Message}";
             }
         }
 

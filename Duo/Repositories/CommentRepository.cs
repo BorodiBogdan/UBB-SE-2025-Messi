@@ -15,6 +15,14 @@ namespace Duo.Repositories
     {
         private readonly IDatabaseConnection _dataLink;
         private const int MINIMUM_ALLOWED_ID_NUMBER = 0;
+        const int ID_INDEX = 0;
+        const int CONTENT_INDEX = 1;
+        const int USER_ID_INDEX = 2;
+        const int POST_ID_INDEX = 3;
+        const int PARENT_COMMENT_ID_INDEX = 4;
+        const int CREATED_AT_INDEX = 5;
+        const int LIKE_COUNT_INDEX = 6;
+        const int LEVEL_INDEX = 7;
 
         public CommentRepository(IDatabaseConnection dataLink)
         {
@@ -37,14 +45,6 @@ namespace Duo.Repositories
                 if (dataTable.Rows.Count == 0)
                     throw new Exception("Comment not found");
 
-                const int ID_INDEX = 0;
-                const int CONTENT_INDEX = 1;
-                const int USER_ID_INDEX = 2;
-                const int POST_ID_INDEX = 3;
-                const int PARENT_COMMENT_ID_INDEX = 4;
-                const int CREATED_AT_INDEX = 5;
-                const int LIKE_COUNT_INDEX = 6;
-                const int LEVEL_INDEX = 7;
                 var row = dataTable.Rows[0];
                 return new Comment(
                     Convert.ToInt32(row[ID_INDEX]),
@@ -221,14 +221,6 @@ namespace Duo.Repositories
         private List<Comment> convertDataTableToCommentList(DataTable dataTable)
         {
             List<Comment> comments = new List<Comment>();
-            const int ID_INDEX = 0;
-            const int CONTENT_INDEX = 1;
-            const int USER_ID_INDEX = 2;
-            const int POST_ID_INDEX = 3;
-            const int PARENT_COMMENT_ID_INDEX = 4;
-            const int CREATED_AT_INDEX = 5;
-            const int LIKE_COUNT_INDEX = 6;
-            const int LEVEL_INDEX = 7;
 
             foreach (DataRow row in dataTable.Rows)
             {

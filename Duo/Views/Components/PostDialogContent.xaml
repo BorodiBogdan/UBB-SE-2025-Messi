@@ -111,7 +111,7 @@
             
             <!-- Error Display -->
             <TextBlock x:Name="ErrorTextBlock" 
-                       Text="{x:Bind ViewModel.Error, Mode=OneWay}" 
+                       Text="{x:Bind ViewModel.LastError, Mode=OneWay}" 
                        Foreground="Red"
                        Style="{StaticResource CaptionTextBlockStyle}"
                        Margin="0,8,0,0"
