@@ -14,6 +14,7 @@ using Duo.Views.Components;
 using System.Threading.Tasks;
 using Duo.Helpers;
 using Duo.Services.Interfaces;
+using System.Linq;
 
 namespace Duo.ViewModels
 {
@@ -67,20 +68,10 @@ namespace Duo.ViewModels
             get => _postTitle;
             set
             {
-                if (_postTitle != value)
-                {
-                    _postTitle = value;
-                    var (isValid, errorMessage) = ValidationHelper.ValidatePostTitle(value);
-                    if (!isValid)
-                    {
-                        LastError = errorMessage;
-                    }
-                    else
-                    {
-                        LastError = EMPTY_STRING;
-                    }
-                    OnPropertyChanged();
-                }
+                _postTitle = value;
+                var (isValid, errorMessage) = ValidationHelper.ValidatePostTitle(value);
+                LastError = ValidationHelper.UpdateLastErrorInfo(isValid, errorMessage);
+                OnPropertyChanged();
             }
         }
 
@@ -89,20 +80,10 @@ namespace Duo.ViewModels
             get => _postContent;
             set
             {
-                if (_postContent != value)
-                {
-                    _postContent = value;
-                    var (isValid, errorMessage) = ValidationHelper.ValidatePostContent(value);
-                    if (!isValid)
-                    {
-                        LastError = errorMessage;
-                    }
-                    else
-                    {
-                        LastError = EMPTY_STRING;
-                    }
-                    OnPropertyChanged();
-                }
+                _postContent = value;
+                var (isValid, errorMessage) = ValidationHelper.ValidatePostContent(value);
+                LastError = ValidationHelper.UpdateLastErrorInfo(isValid, errorMessage);
+                OnPropertyChanged();
             }
         }
 
@@ -111,12 +92,9 @@ namespace Duo.ViewModels
             get => _selectedCategoryId;
             set
             {
-                if (_selectedCategoryId != value)
-                {
-                    _selectedCategoryId = value;
-                    OnPropertyChanged();
-                    UpdateSelectedCommunity();
-                }
+                _selectedCategoryId = value;
+                OnPropertyChanged();
+                UpdateSelectedCommunity();
             }
         }
 
@@ -129,11 +107,8 @@ namespace Duo.ViewModels
             get => _lastError;
             set
             {
-                if (_lastError != value)
-                {
-                    _lastError = value;
-                    OnPropertyChanged();
-                }
+                _lastError = value;
+                OnPropertyChanged();
             }
         }
 
@@ -142,11 +117,8 @@ namespace Duo.ViewModels
             get => _isLoading;
             set
             {
-                if (_isLoading != value)
-                {
-                    _isLoading = value;
-                    OnPropertyChanged();
-                }
+                _isLoading = value;
+                OnPropertyChanged();
             }
         }
 
@@ -155,11 +127,8 @@ namespace Duo.ViewModels
             get => _isSuccess;
             set
             {
-                if (_isSuccess != value)
-                {
-                    _isSuccess = value;
-                    OnPropertyChanged();
-                }
+                _isSuccess = value;
+                OnPropertyChanged();
             }
         }
 
@@ -185,27 +154,11 @@ namespace Duo.ViewModels
 
         public void CreatePost()
         {
-            if (string.IsNullOrWhiteSpace(Title) || string.IsNullOrWhiteSpace(Content))
-            {
-                LastError = "Title and content are required.";
-                return;
-            }
 
             var (isTitleValid, titleError) = ValidationHelper.ValidatePostTitle(Title);
-            if (!isTitleValid)
-            {
-                LastError = titleError;
-                return;
-            }
-
-            if (SelectedCategoryId <= INVALID_ID)
-            {
-                LastError = "Please select a community for your post.";
-                return;
-            }
-
+            LastError = ValidationHelper.UpdateLastErrorInfo(isTitleValid, titleError);
             IsLoading = true;
-            LastError = EMPTY_STRING;
+        
 
             try
             {
@@ -229,18 +182,7 @@ namespace Duo.ViewModels
                 // Add hashtags if any
                 if (Hashtags.Count > DEFAULT_COUNT)
                 {
-                    foreach (var hashtagText in Hashtags)
-                    {
-                        try
-                        {
-                            _postService.AddHashtagToPost(createdPostId, hashtagText, currentUser.UserId);
-                        }
-                        catch (Exception hashtagException)
-                        {
-                            Debug.WriteLine($"Error adding hashtag '{hashtagText}' to post: {hashtagException.Message}");
-                            // Continue with other hashtags even if one fails
-                        }
-                    }
+                    _postService.AddAllHashtagsToPost(createdPostId,Hashtags.ToArray(), currentUser.UserId);
                 }
 
                 // Handle success
@@ -436,6 +378,7 @@ namespace Duo.ViewModels
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
+
 
     }
 }

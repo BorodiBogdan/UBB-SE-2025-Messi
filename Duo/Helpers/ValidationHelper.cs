@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using Windows.System.Update;
 
 namespace Duo.Helpers
 {
     public static class ValidationHelper
     {
+        private const string EMPTY_STRING = "";
         public static bool ValidateNotNullOrEmpty(string stringToCheck, string parameterName)
         {
             if (string.IsNullOrEmpty(stringToCheck))
@@ -162,6 +164,17 @@ namespace Duo.Helpers
             }
             
             return (true, string.Empty);
+        }
+        public static string UpdateLastErrorInfo(bool isValid, string errorMessage)
+        {
+            if (!isValid)
+            {
+                return errorMessage;
+            }
+            else
+            {
+                return EMPTY_STRING;
+            }
         }
 
     }
