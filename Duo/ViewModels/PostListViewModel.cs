@@ -9,13 +9,13 @@ using System.Runtime.CompilerServices;
 using System.Collections.ObjectModel;
 using System.Collections.Generic;
 using System.Linq;
+using Duo.Services.Interfaces;
 
 namespace Duo.ViewModels
 {
     public class PostListViewModel : INotifyPropertyChanged
     {
-        private readonly PostService _postService;
-        private readonly CategoryService _categoryService;
+        private readonly IPostService _postService;
         
         // Constants for validation and defaults
         private const int INVALID_ID = 0;
@@ -39,10 +39,9 @@ namespace Duo.ViewModels
 
         public event PropertyChangedEventHandler PropertyChanged;
 
-        public PostListViewModel(PostService? postService = null, CategoryService? categoryService = null)
+        public PostListViewModel(IPostService? postService = null, ICategoryService? categoryService = null)
         {
             _postService = postService ?? App._postService;
-            _categoryService = categoryService ?? App._categoryService;
             _posts = new ObservableCollection<Post>();
             _currentPage = DEFAULT_PAGE_NUMBER;
             _selectedHashtags.Add(ALL_HASHTAGS_FILTER);

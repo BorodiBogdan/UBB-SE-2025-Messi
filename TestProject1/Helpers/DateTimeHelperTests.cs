@@ -364,5 +364,57 @@ namespace TestProject1.Helpers
             Assert.NotNull(result);
             Assert.Equal(new DateTime(2024, 1, 1, 12, 0, 0), result.Value);
         }
+
+        [Fact]
+        public void FormatDate_WithToday_ReturnsToday()
+        {
+            // Arrange
+            var today = DateTime.Today;
+
+            // Act
+            var result = DateTimeHelper.FormatDate(today);
+
+            // Assert
+            Assert.Equal("Today", result);
+        }
+
+        [Fact]
+        public void FormatDate_WithYesterday_ReturnsYesterday()
+        {
+            // Arrange
+            var yesterday = DateTime.Today.AddDays(-1);
+
+            // Act
+            var result = DateTimeHelper.FormatDate(yesterday);
+
+            // Assert
+            Assert.Equal("Yesterday", result);
+        }
+
+        [Fact]
+        public void FormatDate_WithDateWithinLastWeek_ReturnsDayOfWeek()
+        {
+            // Arrange
+            var threeDaysAgo = DateTime.Today.AddDays(-3);
+
+            // Act
+            var result = DateTimeHelper.FormatDate(threeDaysAgo);
+
+            // Assert
+            Assert.Equal(threeDaysAgo.ToString("ddd"), result);
+        }
+
+        [Fact]
+        public void FormatDate_WithDateMoreThanWeekAgo_ReturnsMonthAndDay()
+        {
+            // Arrange
+            var date = new DateTime(2024, 1, 1);
+
+            // Act
+            var result = DateTimeHelper.FormatDate(date);
+
+            // Assert
+            Assert.Equal("Jan 1", result);
+        }
     }
 }
