@@ -280,11 +280,11 @@ namespace Duo.Views.Components
             // Display error if no community is selected
             if (!isCommunitySelected)
             {
-                ViewModel.Error = "Please select a community for your post.";
+                ViewModel.LastError = "Please select a community for your post.";
             }
             else if (isTitleValid && isContentValid && isHashtagValid)
             {
-                ViewModel.Error = string.Empty;
+                ViewModel.LastError = string.Empty;
             }
             
             return isTitleValid && isContentValid && isHashtagValid && isCommunitySelected;
@@ -421,7 +421,7 @@ namespace Duo.Views.Components
             // Update error TextBlock visibility
             if (ErrorTextBlock != null)
             {
-                ErrorTextBlock.Visibility = (ViewModel != null && !string.IsNullOrWhiteSpace(ViewModel.Error)) 
+                ErrorTextBlock.Visibility = (ViewModel != null && !string.IsNullOrWhiteSpace(ViewModel.LastError)) 
                     ? Visibility.Visible : Visibility.Collapsed;
             }
         }
@@ -431,7 +431,7 @@ namespace Duo.Views.Components
             System.Diagnostics.Debug.WriteLine($"Property changed: {e.PropertyName}");
             
             if (e.PropertyName == nameof(ViewModel.Hashtags) || 
-                e.PropertyName == nameof(ViewModel.Error) ||
+                e.PropertyName == nameof(ViewModel.LastError) ||
                 e.PropertyName == "Item[]") // This can be fired for collection changes
             {
                 UpdateUIVisibility();
