@@ -6,48 +6,48 @@ namespace Duo.Helpers
 {
     public static class ValidationHelper
     {
-        public static bool ValidateNotNullOrEmpty(string value, string parameterName)
+        public static bool ValidateNotNullOrEmpty(string stringToCheck, string parameterName)
         {
-            if (string.IsNullOrEmpty(value))
+            if (string.IsNullOrEmpty(stringToCheck))
             {
                 throw new ArgumentException($"{parameterName} cannot be null or empty.");
             }
             return true;
         }
 
-        public static bool ValidateRange<T>(T value, T min, T max, string parameterName) where T : IComparable<T>
+        public static bool ValidateRange<T>(T valueToCheck, T min, T max, string parameterName) where T : IComparable<T>
         {
-            if (value.CompareTo(min) < 0 || value.CompareTo(max) > 0)
+            if (valueToCheck.CompareTo(min) < 0 || valueToCheck.CompareTo(max) > 0)
             {
                 throw new ArgumentOutOfRangeException(parameterName, $"{parameterName} must be between {min} and {max}.");
             }
             return true;
         }
 
-        public static bool ValidateCollectionNotEmpty<T>(ICollection<T> collection, string parameterName)
+        public static bool ValidateCollectionNotEmpty<T>(ICollection<T> collectionToCheck, string parameterName)
         {
-            if (collection == null || collection.Count == 0)
+            if (collectionToCheck == null || collectionToCheck.Count == 0)
             {
                 throw new ArgumentException($"{parameterName} cannot be null or empty.");
             }
             return true;
         }
 
-        public static bool ValidateCondition(bool condition, string errorMessage)
+        public static bool ValidateCondition(bool conditionToCheck, string errorMessage)
         {
-            if (!condition)
+            if (!conditionToCheck)
             {
                 throw new ArgumentException(errorMessage);
             }
             return true;
         }
 
-        public static bool ValidatePost(string content, string? title = null)
+        public static bool ValidatePost(string contentToCheck, string? title = null)
         {
 
-            ValidateNotNullOrEmpty(content, nameof(content));
+            ValidateNotNullOrEmpty(contentToCheck, nameof(contentToCheck));
 
-            ValidateRange(content.Length, 1, 4000, "Post content length");
+            ValidateRange(contentToCheck.Length, 1, 4000, "Post content length");
 
             if (title != null)
             {
@@ -57,59 +57,59 @@ namespace Duo.Helpers
             return true;
         }
 
-        public static bool ValidateComment(string content)
+        public static bool ValidateComment(string commentContent)
         {
 
-            ValidateNotNullOrEmpty(content, nameof(content));
+            ValidateNotNullOrEmpty(commentContent, nameof(commentContent));
 
-            ValidateRange(content.Length, 1, 1000, "Comment length");
+            ValidateRange(commentContent.Length, 1, 1000, "Comment length");
 
             return true;
         }
 
-        public static bool ValidateHashtag(string hashtag)
+        public static bool ValidateHashtag(string hashtagToValidate)
         {
 
-            ValidateNotNullOrEmpty(hashtag, nameof(hashtag));
+            ValidateNotNullOrEmpty(hashtagToValidate, nameof(hashtagToValidate));
 
-            ValidateCondition(!string.IsNullOrEmpty(hashtag), "Hashtag cannot be just a # symbol.");
+            ValidateCondition(!string.IsNullOrEmpty(hashtagToValidate), "Hashtag cannot be just a # symbol.");
 
-            ValidateCondition(Regex.IsMatch(hashtag, @"^[a-zA-Z0-9]+$"), 
+            ValidateCondition(Regex.IsMatch(hashtagToValidate, @"^[a-zA-Z0-9]+$"), 
                 "Hashtag can only contain letters and numbers.");
 
-            ValidateRange(hashtag.Length, 1, 30, "Hashtag length");
+            ValidateRange(hashtagToValidate.Length, 1, 30, "Hashtag length");
 
             return true;
         }
 
-        public static bool ValidateUsername(string username)
+        public static bool ValidateUsername(string usernameToValidate)
         {
-            ValidateNotNullOrEmpty(username, nameof(username));
+            ValidateNotNullOrEmpty(usernameToValidate, nameof(usernameToValidate));
 
-            ValidateRange(username.Length, 1, 30, "Username length");
+            ValidateRange(usernameToValidate.Length, 1, 30, "Username length");
 
-            ValidateCondition(Regex.IsMatch(username, @"^[a-zA-Z0-9]+$"), 
+            ValidateCondition(Regex.IsMatch(usernameToValidate, @"^[a-zA-Z0-9]+$"), 
                 "Username can only contain letters and numbers.");
 
-            ValidateCondition(!username.Contains(" "), "Username cannot contain spaces.");
+            ValidateCondition(!usernameToValidate.Contains(" "), "Username cannot contain spaces.");
 
             return true;
         }
 
 
-        public static (bool IsValid, string ErrorMessage) ValidatePostTitle(string title)
+        public static (bool IsValid, string ErrorMessage) ValidatePostTitle(string postTitle)
         {
-            if (string.IsNullOrWhiteSpace(title))
+            if (string.IsNullOrWhiteSpace(postTitle))
             {
                 return (false, "Title cannot be empty.");
             }
             
-            if (title.Length < 3)
+            if (postTitle.Length < 3)
             {
                 return (false, "Title should be at least 3 characters long.");
             }
 
-            if (title.Length > 50)
+            if (postTitle.Length > 50)
             {
                 return (false, "Title cannot exceed 50 characters.");
             }
@@ -117,19 +117,19 @@ namespace Duo.Helpers
             return (true, string.Empty);
         }
 
-        public static (bool IsValid, string ErrorMessage) ValidatePostContent(string content)
+        public static (bool IsValid, string ErrorMessage) ValidatePostContent(string postContent)
         {
-            if (string.IsNullOrWhiteSpace(content))
+            if (string.IsNullOrWhiteSpace(postContent))
             {
                 return (false, "Content cannot be empty.");
             }
             
-            if (content.Length < 10)
+            if (postContent.Length < 10)
             {
                 return (false, "Content should be at least 10 characters long.");
             }
             
-            if (content.Length > 4000)
+            if (postContent.Length > 4000)
             {
                 return (false, "Content cannot exceed 4000 characters.");
             }
@@ -137,14 +137,14 @@ namespace Duo.Helpers
             return (true, string.Empty);
         }
 
-        public static (bool IsValid, string ErrorMessage) ValidateHashtagInput(string hashtag)
+        public static (bool IsValid, string ErrorMessage) ValidateHashtagInput(string newInputHashtag)
         {
-            if (string.IsNullOrWhiteSpace(hashtag))
+            if (string.IsNullOrWhiteSpace(newInputHashtag))
             {
                 return (true, string.Empty); 
             }
             
-            string cleanHashtag = hashtag.StartsWith("#") ? hashtag.Substring(1) : hashtag;
+            string cleanHashtag = newInputHashtag.StartsWith("#") ? newInputHashtag.Substring(1) : newInputHashtag;
             
             if (string.IsNullOrWhiteSpace(cleanHashtag))
             {
