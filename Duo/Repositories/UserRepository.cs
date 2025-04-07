@@ -11,10 +11,24 @@ namespace Duo.Repositories
 {
     public class UserRepository : IUserRepository
     {
-        private readonly IDatabaseConnection dataLink;
-        public UserRepository(IDatabaseConnection dataLink)
+        private const int INVALID_USER_ID = 0;
+        private const int EMPTY_RESULT_COUNT = 0;
+        private const int FIRST_ROW_INDEX = 0;
+        private const int USER_ID_COLUMN_INDEX = 0;
+        private const int USERNAME_COLUMN_INDEX = 1;
+        private const string USER_ID_COLUMN_NAME = "userID";
+        private const string USERNAME_COLUMN_NAME = "username";
+        private const string CREATE_USER_PROCEDURE = "CreateUser";
+        private const string GET_USER_BY_ID_PROCEDURE = "GetUserByID";
+        private const string GET_USER_BY_USERNAME_PROCEDURE = "GetUserByUsername";
+        private const string USERNAME_PARAMETER = "@Username";
+        private const string USER_ID_PARAMETER = "@UserID";
+
+        private readonly IDatabaseConnection _databaseConnection;
+
+        public UserRepository(IDatabaseConnection databaseConnection)
         {
-            this.dataLink = dataLink ?? throw new ArgumentNullException(nameof(dataLink));
+            _databaseConnection = databaseConnection ?? throw new ArgumentNullException(nameof(databaseConnection));
         }
         
         public int CreateUser(User user)
@@ -36,37 +50,37 @@ namespace Duo.Repositories
 
             SqlParameter[] parameters = new SqlParameter[]
             {
-                new SqlParameter("@Username", user.Username),
+                new SqlParameter(USERNAME_PARAMETER, user.Username),
             };
             
-            int? result = dataLink.ExecuteScalar<int>("CreateUser", parameters);
-            return result ?? 0;
+            int? result = _databaseConnection.ExecuteScalar<int>(CREATE_USER_PROCEDURE, parameters);
+            return result ?? INVALID_USER_ID;
         }
 
-        public User GetUserById(int id)
+        public User GetUserById(int userId)
         {
-            if (id <= 0)
+            if (userId <= INVALID_USER_ID)
             {
                 throw new ArgumentException("Invalid user ID.");
             }
 
             SqlParameter[] parameters = new SqlParameter[]
             {
-                new SqlParameter("@UserID", id)
+                new SqlParameter(USER_ID_PARAMETER, userId)
             };
 
             DataTable? dataTable = null;
             try
             {
-                dataTable = dataLink.ExecuteReader("GetUserByID", parameters);
-                if (dataTable.Rows.Count == 0)
+                dataTable = _databaseConnection.ExecuteReader(GET_USER_BY_ID_PROCEDURE, parameters);
+                if (dataTable.Rows.Count == EMPTY_RESULT_COUNT)
                 {
                     throw new Exception("User not found.");
                 }
-                var row = dataTable.Rows[0];
+                var row = dataTable.Rows[FIRST_ROW_INDEX];
                 return new User(
-                    Convert.ToInt32(row[0]),
-                    row[1]?.ToString() ?? string.Empty
+                    Convert.ToInt32(row[USER_ID_COLUMN_INDEX]),
+                    row[USERNAME_COLUMN_INDEX]?.ToString() ?? string.Empty
                 );
             }
             finally
@@ -83,22 +97,22 @@ namespace Duo.Repositories
             }
             SqlParameter[] parameters = new SqlParameter[]
             {
-                new SqlParameter("@Username", username)
+                new SqlParameter(USERNAME_PARAMETER, username)
             };
             DataTable? dataTable = null;
             try
             {
-                dataTable = dataLink.ExecuteReader("GetUserByUsername", parameters);
-                if (dataTable.Rows.Count == 0)
+                dataTable = _databaseConnection.ExecuteReader(GET_USER_BY_USERNAME_PROCEDURE, parameters);
+                if (dataTable.Rows.Count == EMPTY_RESULT_COUNT)
                 {
                     return null;
                 }
 
-                var row = dataTable.Rows[0];
+                var row = dataTable.Rows[FIRST_ROW_INDEX];
                 
                 return new User(
-                    Convert.ToInt32(row["userID"]),
-                    row["username"]?.ToString() ?? string.Empty
+                    Convert.ToInt32(row[USER_ID_COLUMN_NAME]),
+                    row[USERNAME_COLUMN_NAME]?.ToString() ?? string.Empty
                 );
             }
             finally

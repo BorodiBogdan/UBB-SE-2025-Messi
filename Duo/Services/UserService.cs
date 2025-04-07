@@ -8,6 +8,11 @@ namespace Duo.Services
 {
     public class UserService : IUserService
     {
+        private const string NO_USER_LOGGED_IN_MESSAGE = "No user is currently logged in.";
+        private const string FAILED_TO_CREATE_OR_FIND_USER_MESSAGE = "Failed to create or find user: {0}";
+        private const string FAILED_TO_GET_USER_BY_ID_MESSAGE = "Failed to get user by ID: {0}";
+        private const string USERNAME_CANNOT_BE_EMPTY_MESSAGE = "Username cannot be empty";
+
         private readonly IUserRepository _userRepository;
         private User _currentUser;
 
@@ -20,7 +25,7 @@ namespace Duo.Services
         {
             if (string.IsNullOrWhiteSpace(username))
             {
-                throw new ArgumentException("Username cannot be empty", nameof(username));
+                throw new ArgumentException(USERNAME_CANNOT_BE_EMPTY_MESSAGE, nameof(username));
             }
 
             try 
@@ -29,7 +34,6 @@ namespace Duo.Services
 
                 if (existingUser != null)
                 {
-
                     _currentUser = existingUser;
                     return;
                 }
@@ -47,7 +51,7 @@ namespace Duo.Services
                     return;
                 }
 
-                throw new Exception($"Failed to create or find user: {ex.Message}", ex);
+                throw new Exception(string.Format(FAILED_TO_CREATE_OR_FIND_USER_MESSAGE, ex.Message), ex);
             }
         }
 
@@ -55,7 +59,7 @@ namespace Duo.Services
         {
             if (_currentUser == null)
             {
-                throw new InvalidOperationException("No user is currently logged in.");
+                throw new InvalidOperationException(NO_USER_LOGGED_IN_MESSAGE);
             }
             return _currentUser;
         }
@@ -68,7 +72,7 @@ namespace Duo.Services
             }
             catch (Exception ex)
             {
-                throw new Exception($"Failed to get user by ID: {ex.Message}", ex);
+                throw new Exception(string.Format(FAILED_TO_GET_USER_BY_ID_MESSAGE, ex.Message), ex);
             }
         }
 
