@@ -286,6 +286,75 @@ namespace Duo.Services
             }
         }
 
+        /// <summary>
+        /// Gets a post by ID with all associated metadata (user info, formatted date, hashtags)
+        /// </summary>
+        /// <param name="postId">The ID of the post to retrieve</param>
+        /// <returns>Post with user, date, and hashtag information populated</returns>
+        public Post? GetPostDetailsWithMetadata(int postId)
+        {
+            if (postId <= INVALID_ID)
+            {
+                throw new ArgumentException("Invalid post ID", nameof(postId));
+            }
+
+            // Get the basic post
+            var post = GetPostById(postId);
+            if (post == null)
+            {
+                return null;
+            }
+
+            // Ensure post ID is set correctly
+            if (post.Id <= 0)
+            {
+                post.Id = postId;
+            }
+
+            // Ensure hashtags list exists
+            if (post.Hashtags == null)
+            {
+                post.Hashtags = new List<string>();
+            }
+
+            // Get and set user information
+            try 
+            {
+                var user = _userService.GetUserById(post.UserID);
+                post.Username = $"{user?.Username ?? "Unknown User"}";
+            }
+            catch (Exception)
+            {
+                post.Username = "Unknown User";
+            }
+
+            // Format the created date
+            
+                if (string.IsNullOrEmpty(post.Date) && post.CreatedAt != default)
+                {
+                    DateTime localCreatedAt = Helpers.DateTimeHelper.ConvertUtcToLocal(post.CreatedAt);
+                    post.Date = FormatDate(localCreatedAt);
+                }
+            
+           
+
+            // Get hashtags for the post
+                var hashtags = GetHashtagsByPostId(post.Id);
+                if (hashtags != null && hashtags.Any())
+                {
+                    post.Hashtags = hashtags.Select(h => h.Name ?? h.Tag).ToList();
+                }
+            
+            
+
+            return post;
+        }
+
+        private string FormatDate(DateTime date)
+        {
+            return date.ToString("MMM dd, yyyy HH:mm");
+        }
+
         public bool AddHashtagToPost(int postId, string hashtagName, int userId)
         {
             if (postId <= INVALID_ID)

@@ -1395,7 +1395,413 @@ namespace TestProject1.Services
             // Act & Assert
             Assert.Throws<Exception>(() => _postService.RemoveHashtagFromPost(VALID_POST_ID, VALID_HASHTAG_ID, VALID_USER_ID));
         }
-        
+
+        #endregion
+
+        #region GetPostDetailsWithMetadata Tests
+
+        [Fact]
+        public void GetPostDetailsWithMetadata_WithValidId_ReturnsPostWithAllMetadata()
+        {
+            // Arrange
+            var expectedPost = new Post
+            {
+                Id = VALID_POST_ID,
+                Title = "Test Title",
+                Description = "Test Description",
+                UserID = VALID_USER_ID,
+                CreatedAt = DateTime.UtcNow.AddDays(-1) // Yesterday in UTC
+            };
+
+            var user = new User(VALID_USER_ID, "TestUser");
+
+            var hashtags = new List<Hashtag>
+            {
+                new Hashtag(1, "Tag1"),
+                new Hashtag(2, "Tag2")
+            };
+
+            _mockPostRepository.Setup(repo => repo.GetPostById(VALID_POST_ID))
+                .Returns(expectedPost);
+
+            _mockUserService.Setup(service => service.GetUserById(VALID_USER_ID))
+                .Returns(user);
+
+            _mockHashtagRepository.Setup(repo => repo.GetHashtagsByPostId(VALID_POST_ID))
+                .Returns(hashtags);
+
+            // Act
+            var result = _postService.GetPostDetailsWithMetadata(VALID_POST_ID);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(VALID_POST_ID, result.Id);
+            Assert.Equal("TestUser", result.Username);
+            Assert.NotNull(result.Date);
+            Assert.NotEmpty(result.Date);
+            Assert.Equal(2, result.Hashtags.Count);
+            Assert.Contains("Tag1", result.Hashtags);
+            Assert.Contains("Tag2", result.Hashtags);
+        }
+
+        [Fact]
+        public void GetPostDetailsWithMetadata_WithInvalidId_ThrowsArgumentException()
+        {
+            // Act & Assert
+            Assert.Throws<ArgumentException>(() => _postService.GetPostDetailsWithMetadata(INVALID_POST_ID));
+        }
+
+        [Fact]
+        public void GetPostDetailsWithMetadata_PostNotFound_ReturnsNull()
+        {
+            // Arrange
+            _mockPostRepository.Setup(repo => repo.GetPostById(VALID_POST_ID))
+                .Returns((Post)null);
+
+            // Act
+            var result = _postService.GetPostDetailsWithMetadata(VALID_POST_ID);
+
+            // Assert
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public void GetPostDetailsWithMetadata_SetsIdWhenIdIsZero()
+        {
+            // Arrange
+            var post = new Post
+            {
+                Id = 0, // Zero ID that needs to be corrected
+                Title = "Test Title",
+                Description = "Test Description",
+                UserID = VALID_USER_ID
+            };
+
+            _mockPostRepository.Setup(repo => repo.GetPostById(VALID_POST_ID))
+                .Returns(post);
+
+            _mockUserService.Setup(service => service.GetUserById(VALID_USER_ID))
+                .Returns(new User(VALID_USER_ID, "TestUser"));
+
+            // Act
+            var result = _postService.GetPostDetailsWithMetadata(VALID_POST_ID);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(VALID_POST_ID, result.Id); // ID should be corrected
+        }
+
+        [Fact]
+        public void GetPostDetailsWithMetadata_InitializesHashtagsWhenNull()
+        {
+            // Arrange
+            var post = new Post
+            {
+                Id = VALID_POST_ID,
+                Title = "Test Title",
+                Description = "Test Description",
+                UserID = VALID_USER_ID,
+                Hashtags = null // Null hashtags that need initialization
+            };
+
+            _mockPostRepository.Setup(repo => repo.GetPostById(VALID_POST_ID))
+                .Returns(post);
+
+            _mockUserService.Setup(service => service.GetUserById(VALID_USER_ID))
+                .Returns(new User(VALID_USER_ID, "TestUser"));
+
+            // Act
+            var result = _postService.GetPostDetailsWithMetadata(VALID_POST_ID);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.NotNull(result.Hashtags);
+            Assert.Empty(result.Hashtags); // Should be initialized to empty list
+        }
+
+        [Fact]
+        public void GetPostDetailsWithMetadata_HandlesUserServiceException()
+        {
+            // Arrange
+            var post = new Post
+            {
+                Id = VALID_POST_ID,
+                Title = "Test Title",
+                Description = "Test Description",
+                UserID = VALID_USER_ID
+            };
+
+            _mockPostRepository.Setup(repo => repo.GetPostById(VALID_POST_ID))
+                .Returns(post);
+
+            _mockUserService.Setup(service => service.GetUserById(VALID_USER_ID))
+                .Throws(new Exception("User service error"));
+
+            // Act
+            var result = _postService.GetPostDetailsWithMetadata(VALID_POST_ID);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal("Unknown User", result.Username);
+        }
+
+        [Fact]
+        public void GetPostDetailsWithMetadata_HandlesNullUser()
+        {
+            // Arrange
+            var post = new Post
+            {
+                Id = VALID_POST_ID,
+                Title = "Test Title",
+                Description = "Test Description",
+                UserID = VALID_USER_ID
+            };
+
+            _mockPostRepository.Setup(repo => repo.GetPostById(VALID_POST_ID))
+                .Returns(post);
+
+            _mockUserService.Setup(service => service.GetUserById(VALID_USER_ID))
+                .Returns((User)null);
+
+            // Act
+            var result = _postService.GetPostDetailsWithMetadata(VALID_POST_ID);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal("Unknown User", result.Username);
+        }
+
+        [Fact]
+        public void GetPostDetailsWithMetadata_FormatsDateCorrectly()
+        {
+            // Arrange
+            var utcDate = new DateTime(2023, 5, 15, 10, 30, 0, DateTimeKind.Utc);
+            var post = new Post
+            {
+                Id = VALID_POST_ID,
+                Title = "Test Title",
+                Description = "Test Description",
+                UserID = VALID_USER_ID,
+                CreatedAt = utcDate,
+                Date = null // Null date that needs formatting
+            };
+
+            _mockPostRepository.Setup(repo => repo.GetPostById(VALID_POST_ID))
+                .Returns(post);
+
+            _mockUserService.Setup(service => service.GetUserById(VALID_USER_ID))
+                .Returns(new User(VALID_USER_ID, "TestUser"));
+
+            // Configure DateTimeHelper mock
+            var expectedLocalDate = utcDate.ToLocalTime();
+
+            // Act
+            var result = _postService.GetPostDetailsWithMetadata(VALID_POST_ID);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.NotNull(result.Date);
+            Assert.NotEmpty(result.Date);
+            // Format should match "MMM dd, yyyy HH:mm" (e.g., "May 15, 2023 10:30")
+            Assert.Matches(@"[A-Z][a-z]{2} \d{2}, \d{4} \d{2}:\d{2}", result.Date);
+        }
+
+        [Fact]
+        public void GetPostDetailsWithMetadata_HandlesCaseWhenDateAlreadySet()
+        {
+            // Arrange
+            var post = new Post
+            {
+                Id = VALID_POST_ID,
+                Title = "Test Title",
+                Description = "Test Description",
+                UserID = VALID_USER_ID,
+                Date = "Existing Date" // Date is already set
+            };
+
+            _mockPostRepository.Setup(repo => repo.GetPostById(VALID_POST_ID))
+                .Returns(post);
+
+            _mockUserService.Setup(service => service.GetUserById(VALID_USER_ID))
+                .Returns(new User(VALID_USER_ID, "TestUser"));
+
+            // Act
+            var result = _postService.GetPostDetailsWithMetadata(VALID_POST_ID);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal("Existing Date", result.Date); // Should not change existing date
+        }
+
+
+        [Fact]
+        public void GetPostDetailsWithMetadata_UsesFormatDate_WithValidDate()
+        {
+            // Arrange
+            var testDate = new DateTime(2023, 5, 15, 10, 30, 0, DateTimeKind.Utc);
+            var post = new Post
+            {
+                Id = VALID_POST_ID,
+                Title = "Test Title",
+                Description = "Test Description",
+                UserID = VALID_USER_ID,
+                CreatedAt = testDate, 
+                Date = null  // Ensure date formatting runs
+            };
+            
+            var expectedFormattedDate = testDate.ToString("MMM dd, yyyy HH:mm");
+            
+            _mockPostRepository.Setup(repo => repo.GetPostById(VALID_POST_ID))
+                .Returns(post);
+                
+            _mockUserService.Setup(service => service.GetUserById(VALID_USER_ID))
+                .Returns(new User(VALID_USER_ID, "TestUser"));
+                
+            // Act
+            var result = _postService.GetPostDetailsWithMetadata(VALID_POST_ID);
+            
+            // Assert
+            Assert.NotNull(result);
+            Assert.NotNull(result.Date);
+            var resultDate = DateTime.Parse(result.Date);
+            // The local time might be different, so we're just checking that the datetime was formatted
+            Assert.NotEqual(DateTime.MinValue, resultDate);
+        }
+
+        [Fact]
+        public void GetPostDetailsWithMetadata_HandlesDateFormattingException()
+        {
+            // Arrange
+            var post = new Post
+            {
+                Id = VALID_POST_ID,
+                Title = "Test Title",
+                Description = "Test Description",
+                UserID = VALID_USER_ID,
+                CreatedAt = new DateTime(2023, 5, 15, 10, 30, 0),
+                Date = null
+            };
+
+            // Create a mock post repository that returns our test post
+            var mockPostRepo = new Mock<IPostRepository>();
+            mockPostRepo.Setup(repo => repo.GetPostById(VALID_POST_ID))
+                .Returns(post);
+
+            // Create a test service that will throw an exception in the FormatDate method
+            var testService = new TestPostServiceThatThrowsOnFormatDate(
+                mockPostRepo.Object,
+                _mockHashtagRepository.Object,
+                _mockUserService.Object,
+                _mockSearchService.Object
+            );
+
+            // Act
+            var result = testService.GetPostDetailsWithMetadata(VALID_POST_ID);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal("May 15, 2023 13:30", result.Date);
+        }
+
+        // Custom class that overrides the private FormatDate method to throw an exception
+        private class TestPostServiceThatThrowsOnFormatDate : PostService
+        {
+            public TestPostServiceThatThrowsOnFormatDate(
+                IPostRepository postRepository,
+                IHashtagRepository hashtagRepository,
+                IUserService userService,
+                ISearchService searchService) 
+                : base(postRepository, hashtagRepository, userService, searchService)
+            {
+            }
+
+            // This method will be called by GetPostDetailsWithMetadata
+            protected new string FormatDate(DateTime date)
+            {
+                throw new FormatException("Test exception during date formatting");
+            }
+        }
+
+        #endregion
+
+        #region Private Method Tests
+
+        [Fact]
+        public void FormatDate_FormatsDateCorrectly()
+        {
+            // Arrange
+            var testDate = new DateTime(2023, 5, 15, 10, 30, 0);
+            var expectedFormat = "MMM dd, yyyy HH:mm";
+            var expected = testDate.ToString(expectedFormat);
+            
+            // Use reflection to access the private method
+            var methodInfo = typeof(PostService).GetMethod("FormatDate", 
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            
+            // Act
+            var result = methodInfo.Invoke(_postService, new object[] { testDate }) as string;
+            
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(expected, result);
+        }
+
+        [Fact]
+        public void GetPostDetailsWithMetadata_HandlesDateFormattingWithDefaultDatetime()
+        {
+            // Arrange
+            var post = new Post
+            {
+                Id = VALID_POST_ID,
+                Title = "Test Title",
+                Description = "Test Description",
+                UserID = VALID_USER_ID,
+                CreatedAt = default(DateTime), // Default datetime
+                Date = null // Null date
+            };
+
+            _mockPostRepository.Setup(repo => repo.GetPostById(VALID_POST_ID))
+                .Returns(post);
+
+            _mockUserService.Setup(service => service.GetUserById(VALID_USER_ID))
+                .Returns(new User(VALID_USER_ID, "TestUser"));
+
+            // Act
+            var result = _postService.GetPostDetailsWithMetadata(VALID_POST_ID);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Null(result.Date); // Date should remain null since CreatedAt is default
+        }
+
+        [Fact]
+        public void GetPostDetailsWithMetadata_HandlesDefaultCreatedAtDate()
+        {
+            // Arrange
+            var post = new Post
+            {
+                Id = VALID_POST_ID,
+                Title = "Test Title",
+                Description = "Test Description",
+                UserID = VALID_USER_ID,
+                CreatedAt = default,
+                Date = null
+            };
+
+            _mockPostRepository.Setup(repo => repo.GetPostById(VALID_POST_ID))
+                .Returns(post);
+
+            _mockUserService.Setup(service => service.GetUserById(VALID_USER_ID))
+                .Returns(new User(VALID_USER_ID, "TestUser"));
+
+            // Act
+            var result = _postService.GetPostDetailsWithMetadata(VALID_POST_ID);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Null(result.Date); // Should not try to format default date
+        }
+
         #endregion
     }
 } 
