@@ -9,6 +9,7 @@ using Duo.Repositories;
 using Duo.Repositories.Interfaces;
 using System.Diagnostics;
 using System.Linq;
+using Duo.Repositories.Interfaces;
 
 namespace Duo.Services
 {
