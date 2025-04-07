@@ -451,5 +451,180 @@ namespace Duo.Services
                 throw new Exception($"Error creating post with hashtags: {ex.Message}", ex);
             }
         }
+
+        /// <summary>
+        /// Gets hashtags based on an optional category ID.
+        /// </summary>
+        /// <param name="categoryId">The optional category ID to filter hashtags.</param>
+        /// <returns>A list of hashtags, either all hashtags or filtered by category.</returns>
+        public List<Hashtag> GetHashtags(int? categoryId)
+        {
+            if (categoryId == null || categoryId <= INVALIDID)
+            {
+                return this.GetAllHashtags();
+            }
+
+            return this.GetHashtagsByCategory(categoryId.Value);
+        }
+
+        /// <summary>
+        /// Gets filtered and formatted posts based on various criteria.
+        /// </summary>
+        /// <param name="categoryId">The optional category ID to filter posts.</param>
+        /// <param name="selectedHashtags">The list of selected hashtags to filter posts.</param>
+        /// <param name="filterText">The text to filter posts by title.</param>
+        /// <param name="currentPage">The current page number.</param>
+        /// <param name="itemsPerPage">The number of items per page.</param>
+        /// <returns>A tuple containing the filtered posts and total count.</returns>
+        /// <exception cref="ArgumentException">Thrown when pagination parameters are invalid.</exception>
+        /// <exception cref="Exception">Thrown when an error occurs during post retrieval or formatting.</exception>
+        public (List<Post> Posts, int TotalCount) GetFilteredAndFormattedPosts(
+            int? categoryId,
+            List<string> selectedHashtags,
+            string filterText,
+            int currentPage,
+            int itemsPerPage)
+        {
+            if (currentPage < MINPAGENUMBER || itemsPerPage < MINPAGESIZE)
+            {
+                throw new ArgumentException("Invalid pagination parameters.");
+            }
+
+            try
+            {
+                IEnumerable<Post> filteredPosts;
+                int totalCount;
+
+                if (selectedHashtags.Count > DEFAULTCOUNT && !selectedHashtags.Contains("All"))
+                {
+                    filteredPosts = this.GetPostsByHashtags(selectedHashtags, currentPage, itemsPerPage);
+                    totalCount = this.GetPostCountByHashtags(selectedHashtags);
+                }
+                else if (categoryId.HasValue && categoryId.Value > INVALIDID)
+                {
+                    if (!string.IsNullOrEmpty(filterText))
+                    {
+                        filteredPosts = this.GetPostsByCategory(categoryId.Value, MINPAGENUMBER, int.MaxValue);
+                    }
+                    else
+                    {
+                        filteredPosts = this.GetPostsByCategory(categoryId.Value, currentPage, itemsPerPage);
+                    }
+
+                    totalCount = this.GetPostCountByCategoryId(categoryId.Value);
+                }
+                else
+                {
+                    if (!string.IsNullOrEmpty(filterText))
+                    {
+                        filteredPosts = this.GetPaginatedPosts(MINPAGENUMBER, int.MaxValue);
+                    }
+                    else
+                    {
+                        filteredPosts = this.GetPaginatedPosts(currentPage, itemsPerPage);
+                    }
+
+                    totalCount = this.GetTotalPostCount();
+                }
+
+                if (!string.IsNullOrEmpty(filterText))
+                {
+                    var searchResults = new List<Post>();
+                    foreach (var post in filteredPosts)
+                    {
+                        if (this.searchService.FindFuzzySearchMatches(filterText, new[] { post.Title }).Any())
+                        {
+                            searchResults.Add(post);
+                        }
+                    }
+
+                    totalCount = searchResults.Count;
+                    filteredPosts = searchResults
+                        .Skip((currentPage - MINPAGENUMBER) * itemsPerPage)
+                        .Take(itemsPerPage);
+                }
+
+                var resultPosts = new List<Post>();
+                foreach (var post in filteredPosts)
+                {
+                    if (string.IsNullOrEmpty(post.Username))
+                    {
+                        var postAuthor = this.userService.GetUserById(post.UserID);
+                        post.Username = postAuthor?.Username ?? "Unknown User";
+                    }
+
+                    DateTime localCreatedAt = Helpers.DateTimeHelper.ConvertUtcToLocal(post.CreatedAt);
+                    post.Date = Helpers.DateTimeHelper.GetRelativeTime(localCreatedAt);
+
+                    post.Hashtags.Clear();
+                    try
+                    {
+                        var postHashtags = this.GetHashtagsByPostId(post.Id);
+                        foreach (var hashtag in postHashtags)
+                        {
+                            post.Hashtags.Add(hashtag.Name);
+                        }
+                    }
+                    catch
+                    {
+                        // Continue if hashtag retrieval fails
+                    }
+
+                    resultPosts.Add(post);
+                }
+
+                return (resultPosts, totalCount);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error retrieving filtered and formatted posts: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Toggles the selection state of a hashtag in a set of hashtags.
+        /// </summary>
+        /// <param name="currentHashtags">The current set of selected hashtags.</param>
+        /// <param name="hashtagToToggle">The hashtag to toggle.</param>
+        /// <param name="allHashtagsFilter">The filter value representing all hashtags.</param>
+        /// <returns>The updated set of hashtags after toggling.</returns>
+        public HashSet<string> ToggleHashtagSelection(HashSet<string> currentHashtags, string hashtagToToggle, string allHashtagsFilter)
+        {
+            if (string.IsNullOrEmpty(hashtagToToggle))
+            {
+                return currentHashtags;
+            }
+
+            var updatedHashtags = new HashSet<string>(currentHashtags);
+
+            if (hashtagToToggle == allHashtagsFilter)
+            {
+                updatedHashtags.Clear();
+                updatedHashtags.Add(allHashtagsFilter);
+            }
+            else
+            {
+                if (updatedHashtags.Contains(hashtagToToggle))
+                {
+                    updatedHashtags.Remove(hashtagToToggle);
+
+                    if (updatedHashtags.Count == DEFAULTCOUNT)
+                    {
+                        updatedHashtags.Add(allHashtagsFilter);
+                    }
+                }
+                else
+                {
+                    updatedHashtags.Add(hashtagToToggle);
+
+                    if (updatedHashtags.Contains(allHashtagsFilter))
+                    {
+                        updatedHashtags.Remove(allHashtagsFilter);
+                    }
+                }
+            }
+
+            return updatedHashtags;
+        }
     }
 }

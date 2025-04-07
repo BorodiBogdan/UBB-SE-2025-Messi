@@ -39,7 +39,7 @@ namespace Duo.ViewModels
 
         public event PropertyChangedEventHandler PropertyChanged;
 
-        public PostListViewModel(IPostService? postService = null, ICategoryService? categoryService = null)
+        public PostListViewModel(IPostService postService, ICategoryService? categoryService = null)
         {
             _postService = postService ?? App._postService;
             _posts = new ObservableCollection<Post>();
@@ -138,25 +138,13 @@ namespace Duo.ViewModels
 
         private void LoadAllHashtags()
         {
-            if (_postService == null) return;
-
             try
             {
                 _allHashtags.Clear();
                 _allHashtags.Add(ALL_HASHTAGS_FILTER);
 
-                List<Hashtag> hashtags;
 
-                if (_categoryID.HasValue && _categoryID.Value > INVALID_ID)
-                {
-                    hashtags = _postService.GetHashtagsByCategory(_categoryID.Value);
-                }
-                else
-                {
-                    hashtags = _postService.GetAllHashtags();
-                }
-
-                foreach (var hashtag in hashtags)
+                foreach (var hashtag in _postService.GetHashtags(_categoryID))
                 {
                     if (!_allHashtags.Contains(hashtag.Name))
                     {
@@ -174,104 +162,22 @@ namespace Duo.ViewModels
 
         public void LoadPosts()
         {
-            if (_postService == null) return;
+            var (posts, totalCount) = _postService.GetFilteredAndFormattedPosts(
+                _categoryID,
+                _selectedHashtags.ToList(),
+                _filterText,
+                _currentPage,
+                ItemsPerPage);
 
-            try
+            Posts.Clear();
+            foreach (var post in posts)
             {
-                IEnumerable<Post> filteredPosts;
-
-                int pageOffset = (CurrentPage - DEFAULT_PAGE_NUMBER) * ItemsPerPage;
-
-                if (_selectedHashtags.Count > DEFAULT_COUNT && !_selectedHashtags.Contains(ALL_HASHTAGS_FILTER))
-                {
-                    filteredPosts = _postService.GetPostsByHashtags(_selectedHashtags.ToList(), CurrentPage, ItemsPerPage);
-                    _totalPostCount = _postService.GetPostCountByHashtags(_selectedHashtags.ToList());
-                }
-                else if (_categoryID.HasValue && _categoryID.Value > INVALID_ID)
-                {
-                    if (!string.IsNullOrEmpty(FilterText))
-                    {
-                        filteredPosts = _postService.GetPostsByCategory(CategoryID, DEFAULT_PAGE_NUMBER, int.MaxValue);
-                    }
-                    else
-                    {
-                        filteredPosts = _postService.GetPostsByCategory(CategoryID, CurrentPage, ItemsPerPage);
-                    }
-
-                    _totalPostCount = _postService.GetPostCountByCategoryId(CategoryID);
-
-                }
-                else
-                {
-                    if (!string.IsNullOrEmpty(FilterText))
-                    {
-                        filteredPosts = _postService.GetPaginatedPosts(DEFAULT_PAGE_NUMBER, int.MaxValue);
-                    }
-                    else
-                    {
-                        filteredPosts = _postService.GetPaginatedPosts(CurrentPage, ItemsPerPage);
-                    }
-
-                    _totalPostCount = _postService.GetTotalPostCount();
-                }
-
-                if (!string.IsNullOrEmpty(FilterText))
-                {
-                    var searchResults = new List<Post>();
-                    foreach (var post in filteredPosts)
-                    {
-
-                        if (App._searchService.FindFuzzySearchMatches(FilterText, new[] { post.Title }).Any())
-                        {
-                            searchResults.Add(post);
-                        }
-                    }
-
-                    _totalPostCount = searchResults.Count;
-
-                    filteredPosts = searchResults
-                        .Skip((CurrentPage - DEFAULT_PAGE_NUMBER) * ItemsPerPage)
-                        .Take(ItemsPerPage);
-                }
-
-                Posts.Clear();
-
-                foreach (var post in filteredPosts)
-                {
-
-                    if (string.IsNullOrEmpty(post.Username))
-                    {
-                        var postAuthor = App.userService.GetUserById(post.UserID);
-                        post.Username = postAuthor?.Username ?? "Unknown User";
-                    }
-                    
-                    DateTime localCreatedAt = Helpers.DateTimeHelper.ConvertUtcToLocal(post.CreatedAt);
-                    post.Date = Helpers.DateTimeHelper.GetRelativeTime(localCreatedAt);
-                    
-                    post.Hashtags.Clear();
-                    try 
-                    {
-                        var postHashtags = _postService.GetHashtagsByPostId(post.Id);
-                        foreach (var hashtag in postHashtags)
-                        {
-                            post.Hashtags.Add(hashtag.Name);
-                        }
-                    }
-                    catch
-                    {
-                    }
-
-                    Posts.Add(post);
-                }
-
-                TotalPages = Math.Max(DEFAULT_TOTAL_PAGES, (int)Math.Ceiling(_totalPostCount / (double)ItemsPerPage));
-
-                OnPropertyChanged(nameof(TotalPages));
+                Posts.Add(post);
             }
-            catch (Exception ex)
-            {
-                // Handle exception
-            }
+
+            _totalPostCount = totalCount;
+            TotalPages = Math.Max(DEFAULT_TOTAL_PAGES, (int)Math.Ceiling(_totalPostCount / (double)ItemsPerPage));
+            OnPropertyChanged(nameof(TotalPages));
         }
 
         private void NextPage()
@@ -294,45 +200,10 @@ namespace Duo.ViewModels
 
         public void ToggleHashtag(string hashtag)
         {
-            if (string.IsNullOrEmpty(hashtag)) return;
-
-            try
-            {
-                if (hashtag == ALL_HASHTAGS_FILTER)
-                {
-                    _selectedHashtags.Clear();
-                    _selectedHashtags.Add(ALL_HASHTAGS_FILTER);
-                }
-                else
-                {
-                    if (_selectedHashtags.Contains(hashtag))
-                    {
-                        _selectedHashtags.Remove(hashtag);
-
-                        if (_selectedHashtags.Count == DEFAULT_COUNT)
-                        {
-                            _selectedHashtags.Add(ALL_HASHTAGS_FILTER);
-                        }
-                    }
-                    else
-                    {
-                        _selectedHashtags.Add(hashtag);
-
-                        if (_selectedHashtags.Contains(ALL_HASHTAGS_FILTER))
-                        {
-                            _selectedHashtags.Remove(ALL_HASHTAGS_FILTER);
-                        }
-                    }
-                }
-
-                CurrentPage = DEFAULT_PAGE_NUMBER;
-
-                OnPropertyChanged(nameof(SelectedHashtags));
-                LoadPosts();
-            }
-            catch (Exception ex)
-            {
-            }
+            _selectedHashtags = _postService.ToggleHashtagSelection(_selectedHashtags, hashtag, ALL_HASHTAGS_FILTER);
+            CurrentPage = DEFAULT_PAGE_NUMBER;
+            OnPropertyChanged(nameof(SelectedHashtags));
+            LoadPosts();
         }
 
         public void FilterPosts()
