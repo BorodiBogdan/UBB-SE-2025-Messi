@@ -13,41 +13,37 @@ namespace TestProject1.Services
         private readonly ISearchService _searchService;
         private readonly Mock<ISearchService> _mockSearchService;
 
-        // Similarity threshold constants
-        private const double EXACT_MATCH_THRESHOLD = 1.0;
-        private const double HIGH_SIMILARITY_THRESHOLD = 0.8;
-        private const double MEDIUM_SIMILARITY_THRESHOLD = 0.5;
-        private const double LOW_SIMILARITY_THRESHOLD = 0.3;
-        private const double DEFAULT_SIMILARITY_THRESHOLD = 0.6;
-        private const double STRICT_SIMILARITY_THRESHOLD = 0.9;
-
-        // Test query strings
-        private const string BASE_QUERY = "test";
-        private const string LONG_QUERY = "testing";
+        // Test constants
+        private const string TEST_QUERY = "test";
         private const string EMPTY_QUERY = "";
-        private const string SUBSTRING_QUERY = "te";
+        private const string NULL_QUERY = null;
+        private const double DEFAULT_SIMILARITY_THRESHOLD = 0.6;
+        private const double HIGH_SIMILARITY_THRESHOLD = 0.8;
+        private const double EXACT_MATCH_THRESHOLD = 1.0;
+        private const double MEDIUM_SIMILARITY_THRESHOLD = 0.5;
+        
+        // Test string constants
+        private const string SAMPLE_WORD_1 = "kitten";
+        private const string SAMPLE_WORD_2 = "sitting";
+        private const string TEST_STRING_SHORT = "test";
+        private const string TEST_STRING_LONG = "testing";
+        private const string COMPLETELY_DIFFERENT_STRING_1 = "abc";
+        private const string COMPLETELY_DIFFERENT_STRING_2 = "xyz";
 
-        // Levenshtein test strings
-        private const string SOURCE_STRING = "kitten";
-        private const string TARGET_STRING = "sitting";
-        private const string DIFFERENT_STRING_1 = "abc";
-        private const string DIFFERENT_STRING_2 = "xyz";
+        // Test data sets
+        private static readonly List<string> STANDARD_TEST_CANDIDATES = new() { "test1", "test2", "test3" };
+        private static readonly List<string> SIMILAR_WORD_CANDIDATES = new() { "testing", "test", "tester" };
+        private static readonly List<string> MULTI_WORD_CANDIDATES = new() { "hello world", "test world", "world test" };
 
-        // Test word pairs
-        private static readonly string[] SIMILAR_WORDS = { "test", "tst" };
-        private static readonly string[] CONTAINED_SUBSTRINGS = { "te", "ing" };
-        private static readonly string[] MULTI_WORD_STRINGS = { "test world", "world test" };
-
-        // Test candidate collections
-        private static readonly List<string> TEST_CANDIDATES = new()
+        private static readonly List<string> TEST_CANDIDATES = new() 
         { 
-            SIMILAR_WORDS[0],     // Exact match
-            SIMILAR_WORDS[1],     // Similar word
-            LONG_QUERY,          // Contains query
-            MULTI_WORD_STRINGS[0], // Multi-word with exact match
-            "hello " + SIMILAR_WORDS[1],  // Multi-word with similar word
-            DIFFERENT_STRING_2,   // No match
-            SUBSTRING_QUERY       // Shorter string contained in query
+            "test",          // Exact match
+            "tst",           // Similar word
+            "testing",       // Contains query
+            "hello test",    // Multi-word with exact match
+            "hello tst",     // Multi-word with similar word
+            "xyz",           // No match
+            "te"            // Shorter string contained in query
         };
 
         public SearchServiceTests()
@@ -59,24 +55,24 @@ namespace TestProject1.Services
         #region LevenshteinSimilarity Tests
 
         [Theory]
-        [InlineData(SOURCE_STRING, TARGET_STRING, true)]     // Similar strings
-        [InlineData(BASE_QUERY, BASE_QUERY, true)]          // Identical strings
-        [InlineData(EMPTY_QUERY, EMPTY_QUERY, true)]        // Empty strings
-        [InlineData(DIFFERENT_STRING_1, DIFFERENT_STRING_2, false)]  // Different strings
-        [InlineData(BASE_QUERY, EMPTY_QUERY, false)]        // One empty string
-        public void LevenshteinSimilarity_ReturnsExpectedSimilarity(string sourceText, string targetText, bool shouldBeHighSimilarity)
+        [InlineData("kitten", "sitting", true)]  // Similar strings
+        [InlineData("test", "test", true)]       // Identical strings
+        [InlineData("", "", true)]               // Empty strings
+        [InlineData("abc", "xyz", false)]        // Different strings
+        [InlineData("test", "", false)]          // One empty string
+        public void LevenshteinSimilarity_ReturnsExpectedSimilarity(string source, string target, bool shouldBeHighSimilarity)
         {
             // Act
-            double similarityScore = _searchService.LevenshteinSimilarity(sourceText, targetText);
+            double similarityScore = _searchService.LevenshteinSimilarity(source, target);
 
             // Assert
             if (shouldBeHighSimilarity)
             {
-                Assert.True(similarityScore > MEDIUM_SIMILARITY_THRESHOLD);
+                Assert.True(similarityScore > 0.5);
             }
             else
             {
-                Assert.True(similarityScore <= MEDIUM_SIMILARITY_THRESHOLD);
+                Assert.True(similarityScore <= 0.5);
             }
         }
 
@@ -86,39 +82,36 @@ namespace TestProject1.Services
 
         [Theory]
         [InlineData(null)]
-        [InlineData(EMPTY_QUERY)]
-        public void FindFuzzySearchMatches_WithInvalidQuery_ReturnsEmptyList(string searchQuery)
+        [InlineData("")]
+        public void FindFuzzySearchMatches_WithInvalidQuery_ReturnsEmptyList(string query)
         {
-            // Act
-            var matchResults = _searchService.FindFuzzySearchMatches(searchQuery, TEST_CANDIDATES);
-
-            // Assert
-            Assert.Empty(matchResults);
+            var result = _searchService.FindFuzzySearchMatches(query, TEST_CANDIDATES);
+            Assert.Empty(result);
         }
 
         [Fact]
         public void FindFuzzySearchMatches_WithValidQuery_ReturnsMatchesInCorrectOrder()
         {
             // Act
-            var matchResults = _searchService.FindFuzzySearchMatches(BASE_QUERY, TEST_CANDIDATES).ToList();
+            var results = _searchService.FindFuzzySearchMatches(TEST_QUERY, TEST_CANDIDATES).ToList();
 
             // Assert
-            Assert.NotEmpty(matchResults);
+            Assert.NotEmpty(results);
             
-            // Verify exact match is first
-            Assert.Equal(SIMILAR_WORDS[0], matchResults.First());
+            // Exact match should be first
+            Assert.Equal("test", results.First());
             
-            // Verify expected matches are included
-            Assert.Contains(LONG_QUERY, matchResults);
-            Assert.Contains(MULTI_WORD_STRINGS[0], matchResults);
+            // Similar matches should be included
+            Assert.Contains("testing", results);
+            Assert.Contains("hello test", results);
             
-            // Verify non-matches are excluded
-            Assert.DoesNotContain(DIFFERENT_STRING_2, matchResults);
+            // Non-matching strings should not be included
+            Assert.DoesNotContain("xyz", results);
 
-            // Verify ordering (exact matches before similar matches)
-            if (matchResults.Contains(SIMILAR_WORDS[0]) && matchResults.Contains(SIMILAR_WORDS[1]))
+            // Verify order (exact matches before partial matches)
+            if (results.Contains("test") && results.Contains("tst"))
             {
-                Assert.True(matchResults.IndexOf(SIMILAR_WORDS[0]) < matchResults.IndexOf(SIMILAR_WORDS[1]));
+                Assert.True(results.IndexOf("test") < results.IndexOf("tst"));
             }
         }
 
@@ -126,27 +119,28 @@ namespace TestProject1.Services
         public void FindFuzzySearchMatches_WithCustomThreshold_RespectsThreshold()
         {
             // Act
-            var strictMatchResults = _searchService.FindFuzzySearchMatches(BASE_QUERY, TEST_CANDIDATES, STRICT_SIMILARITY_THRESHOLD);
-            var looseMatchResults = _searchService.FindFuzzySearchMatches(BASE_QUERY, TEST_CANDIDATES, LOW_SIMILARITY_THRESHOLD);
+            var highThresholdResults = _searchService.FindFuzzySearchMatches(TEST_QUERY, TEST_CANDIDATES, 0.9);
+            var lowThresholdResults = _searchService.FindFuzzySearchMatches(TEST_QUERY, TEST_CANDIDATES, 0.3);
 
             // Assert
-            Assert.True(strictMatchResults.Count < looseMatchResults.Count);
-            Assert.Contains(SIMILAR_WORDS[0], strictMatchResults);
-            Assert.Contains(SIMILAR_WORDS[1], looseMatchResults);
+            Assert.True(highThresholdResults.Count < lowThresholdResults.Count);
+            Assert.Contains("test", highThresholdResults);
+            Assert.Contains("tst", lowThresholdResults);
         }
 
         [Fact]
         public void FindFuzzySearchMatches_WhenQueryContainsCandidate_IncludesMatch()
         {
             // Arrange
-            var substringsToMatch = new List<string> { SIMILAR_WORDS[0], CONTAINED_SUBSTRINGS[0], CONTAINED_SUBSTRINGS[1] };
+            string longQuery = "testing";
+            var candidates = new List<string> { "test", "te", "ing" };
 
             // Act
-            var matchResults = _searchService.FindFuzzySearchMatches(LONG_QUERY, substringsToMatch).ToList();
+            var results = _searchService.FindFuzzySearchMatches(longQuery, candidates).ToList();
 
             // Assert
-            Assert.Contains(CONTAINED_SUBSTRINGS[0], matchResults);
-            Assert.Contains(CONTAINED_SUBSTRINGS[1], matchResults);
+            Assert.Contains("te", results);  // Should be included because "testing" contains "te"
+            Assert.Contains("ing", results); // Should be included because "testing" contains "ing"
         }
 
         #endregion
