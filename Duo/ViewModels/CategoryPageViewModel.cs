@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Windows.Input;
 using Duo.Commands;
 using Duo.Models;
-using Duo.Services;
 using Duo.ViewModels.Base;
 using Microsoft.UI.Xaml.Controls;
 using System.Diagnostics;
@@ -76,68 +75,56 @@ namespace Duo.ViewModels
 
         public void HandleNavigationSelectionChanged(NavigationViewSelectionChangedEventArgs args)
         {
+            if (args.SelectedItem is not NavigationViewItem selectedItem || string.IsNullOrEmpty(selectedItem.Tag?.ToString()))
+                return;
+
+            // Skip if it's a parent menu item
+            if (selectedItem.MenuItems.Count > 0)
+                return;
+
+            var tag = selectedItem.Tag.ToString();
+
+            if (IsCategoryTag(tag))
+            {
+                HandleCategorySelection(tag);
+            }
+            else
+            {
+                HandlePageNavigation(tag);
+            }
+        }
+
+        private void HandleCategorySelection(string categoryName)
+        {
+            CurrentCategoryName = categoryName;
+            
             try
             {
-                if (args.SelectedItem is NavigationViewItem selectedItem)
+                var category = _categoryService.GetCategoryByName(categoryName);
+                if (category != null)
                 {
-                    var tag = selectedItem.Tag?.ToString();
-
-                    if (string.IsNullOrEmpty(tag))
-                        return;
-
-                    if (selectedItem.MenuItems.Count > 0)
-                    {
-                        return;
-                    }
-
-                    if (IsCategoryTag(tag))
-                    {
-                        // Save the current category name
-                        CurrentCategoryName = tag;
-                        
-                        // Get category ID from name
-                        if (!string.IsNullOrEmpty(CurrentCategoryName))
-                        {
-                            try
-                            {
-                                var category = _categoryService.GetCategoryByName(CurrentCategoryName);
-                                if (category != null)
-                                {
-                                    CurrentCategoryId = category.Id;
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                Debug.WriteLine($"Error getting category ID: {ex.Message}");
-                            }
-                        }
-                        
-                        CategoryNavigationRequested?.Invoke(this, tag);
-                    }
-                    else
-                    {
-                        // Reset the current category when navigating to a non-category page
-                        CurrentCategoryName = string.Empty;
-                        CurrentCategoryId = 0;
-                        
-                        Type? pageType = null;
-                        switch (tag)
-                        {
-                            case "MainPage":
-                                pageType = typeof(Views.Pages.MainPage);
-                                break;
-                            default:
-                                Debug.WriteLine($"Unknown page tag: {tag}");
-                                return;
-                        }
-                        
-                        NavigationRequested?.Invoke(this, pageType);
-                    }
+                    CurrentCategoryId = category.Id;
+                    CategoryNavigationRequested?.Invoke(this, categoryName);
                 }
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Error in navigation selection: {ex.Message}");
+                Debug.WriteLine($"Error getting category ID: {ex.Message}");
+            }
+        }
+
+        private void HandlePageNavigation(string tag)
+        {
+            CurrentCategoryName = string.Empty;
+            CurrentCategoryId = 0;
+            
+            if (tag == "MainPage")
+            {
+                NavigationRequested?.Invoke(this, typeof(Views.Pages.MainPage));
+            }
+            else
+            {
+                Debug.WriteLine($"Unknown page tag: {tag}");
             }
         }
 

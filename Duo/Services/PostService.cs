@@ -244,7 +244,7 @@ namespace Duo.Services
             }
             catch (Exception ex)
             {
-                throw new Exception($"Error retrieving posts for hashtags: {ex.Message}");
+                return GetPaginatedPosts(pageNumber, pageSize);
             }
         }
 
@@ -509,7 +509,8 @@ namespace Duo.Services
             }
             catch (Exception ex)
             {
-                throw new Exception($"Error retrieving filtered and formatted posts: {ex.Message}");
+                var posts = GetPostsByHashtags(selectedHashtags, currentPage, itemsPerPage);
+                return (posts, posts.Count);
             }
         }
 
