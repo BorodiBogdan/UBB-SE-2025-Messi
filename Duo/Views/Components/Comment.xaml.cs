@@ -14,21 +14,17 @@ namespace Duo.Views.Components
     public sealed partial class Comment : UserControl
     {
         // For backward compatibility
-        private readonly CommentService _commentService;
         private const int MAX_NESTING_LEVEL = 3; 
 
         public event EventHandler<CommentReplyEventArgs> ReplySubmitted;
         public event EventHandler<CommentLikedEventArgs> CommentLiked;
-
         public event EventHandler<CommentDeletedEventArgs> CommentDeleted;
 
-        public CommentViewModel ViewModel => DataContext as CommentViewModel;
+        public CommentViewModel? ViewModel => DataContext as CommentViewModel;
 
         public Comment()
         {
             this.InitializeComponent();
-
-            _commentService = new CommentService(_commentRepository, _postRepository, userService);
 
             CommentReplyButton.Click += CommentReplyButton_Click;
             LikeButton.LikeClicked += LikeButton_LikeClicked;

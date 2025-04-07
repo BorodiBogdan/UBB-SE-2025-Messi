@@ -14,7 +14,6 @@ namespace Duo.ViewModels
 {
     public class CommentViewModel : ViewModelBase
     {
-        private CommentService _commentService;
         private Models.Comment _comment;
         private ObservableCollection<CommentViewModel> _replies;
         private bool _isExpanded = true;
@@ -27,11 +26,15 @@ namespace Duo.ViewModels
         private string _toggleIconGlyph = "\uE109"; // Plus icon by default
         private const int MAX_NESTING_LEVEL = 3;
 
+        // Events
+        public event EventHandler<Tuple<int, string>> ?ReplySubmitted;
+
         public CommentViewModel(Comment comment, Dictionary<int, List<Comment>> repliesByParentId)
         {
             _comment = comment ?? throw new ArgumentNullException(nameof(comment));
             _replies = new ObservableCollection<CommentViewModel>();
             _likeCount = comment.LikeCount;
+            _replyText = "";
             
             // Load any child comments/replies
             if (repliesByParentId != null && repliesByParentId.TryGetValue(comment.Id, out var childComments))
@@ -48,9 +51,7 @@ namespace Duo.ViewModels
             ToggleRepliesCommand = new RelayCommand(ToggleReplies);
             ShowReplyFormCommand = new RelayCommand(ShowReplyForm);
             CancelReplyCommand = new RelayCommand(CancelReply);
-            SubmitReplyCommand = new RelayCommand(SubmitReply);
             LikeCommentCommand = new RelayCommand(OnLikeComment);
-            DeleteCommentCommand = new RelayCommand(DeleteComment);
         }
 
         public int Id => _comment.Id;
@@ -130,14 +131,7 @@ namespace Duo.ViewModels
         public ICommand ToggleRepliesCommand { get; }
         public ICommand ShowReplyFormCommand { get; }
         public ICommand CancelReplyCommand { get; }
-        public ICommand SubmitReplyCommand { get; }
         public ICommand LikeCommentCommand { get; }
-        public ICommand DeleteCommentCommand { get; }
-
-        // Events
-        public event EventHandler<Tuple<int, string>> ReplySubmitted;
-        public event EventHandler<int> CommentLiked;
-        public event EventHandler<int> CommentDeleted;
 
         private void UpdateVisibilityStates()
         {
@@ -189,11 +183,6 @@ namespace Duo.ViewModels
         private void OnLikeComment()
         {
             _comment.IncrementLikeCount();
-        }
-
-        private void DeleteComment()
-        {
-            CommentDeleted?.Invoke(this, Id);
         }
     }
 }
