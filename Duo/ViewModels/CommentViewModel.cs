@@ -6,13 +6,15 @@ using Duo.Commands;
 using Duo.Helpers;
 using Duo.ViewModels.Base;
 using Duo.Services;
-using Microsoft.UI.Xaml;
 using static Duo.App;
+using Duo.Data;
+using Duo.Models;
 
 namespace Duo.ViewModels
 {
     public class CommentViewModel : ViewModelBase
     {
+        private CommentService _commentService;
         private Models.Comment _comment;
         private ObservableCollection<CommentViewModel> _replies;
         private bool _isExpanded = true;
@@ -25,7 +27,7 @@ namespace Duo.ViewModels
         private string _toggleIconGlyph = "\uE109"; // Plus icon by default
         private const int MAX_NESTING_LEVEL = 3;
 
-        public CommentViewModel(Models.Comment comment, Dictionary<int, List<Models.Comment>> repliesByParentId)
+        public CommentViewModel(Comment comment, Dictionary<int, List<Comment>> repliesByParentId)
         {
             _comment = comment ?? throw new ArgumentNullException(nameof(comment));
             _replies = new ObservableCollection<CommentViewModel>();
@@ -186,7 +188,6 @@ namespace Duo.ViewModels
 
         private void OnLikeComment()
         {
-            _comment.IncrementLikeCount();
             CommentLiked?.Invoke(this, Id);
         }
 
