@@ -47,32 +47,26 @@ namespace Duo.Helpers
 
         public static DateTime? ParseDateTime(string dateTimeString, string? format = null)
         {
-            try
-            {
-                if (string.IsNullOrWhiteSpace(dateTimeString))
-                    return null;
-
-                if (format != null)
-                {
-                    if (DateTime.TryParseExact(dateTimeString, format, CultureInfo.InvariantCulture, 
-                        DateTimeStyles.None, out DateTime result))
-                    {
-                        return result;
-                    }
-                }
-
-                if (DateTime.TryParse(dateTimeString, CultureInfo.InvariantCulture, 
-                    DateTimeStyles.None, out DateTime parsedDate))
-                {
-                    return parsedDate;
-                }
-
+            
+            if (string.IsNullOrWhiteSpace(dateTimeString))
                 return null;
-            }
-            catch
+
+            if (format != null)
             {
-                return null;
+                if (DateTime.TryParseExact(dateTimeString, format, CultureInfo.InvariantCulture, 
+                    DateTimeStyles.None, out DateTime result))
+                {
+                    return result;
+                }
             }
+
+            if (DateTime.TryParse(dateTimeString, CultureInfo.InvariantCulture, 
+                DateTimeStyles.None, out DateTime parsedDate))
+            {
+                return parsedDate;
+            }
+
+            return null;
         }
 
         public static string FormatAsDate(DateTime? dateTime)
@@ -162,6 +156,24 @@ namespace Duo.Helpers
             return format == null ? 
                 FormatAsDateTime(localDateTime) : 
                 Format(localDateTime, format);
+        }
+        public static string FormatDate(DateTime date)
+        {
+            if (date.Date == DateTime.Today)
+            {
+                return "Today";
+            }
+            else if (date.Date == DateTime.Today.AddDays(-1))
+            {
+                return "Yesterday";
+            }
+            else if ((DateTime.Today - date.Date).TotalDays < 7)
+            {
+                return date.ToString("ddd"); // Day of week
+            }
+
+            DateTime localDate = Duo.Helpers.DateTimeHelper.ConvertUtcToLocal(date);
+            return date.ToString("MMM d"); // Month + day
         }
     }
 }

@@ -7,13 +7,13 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Duo.Commands;
 using System.Collections.Generic;
-using System.Diagnostics;
+using Duo.Services.Interfaces;
 
 namespace Duo.ViewModels
 {
     public class CategoryViewModel : INotifyPropertyChanged
     {
-        private readonly CategoryService _categoryService;
+        private readonly ICategoryService _categoryService;
         private string _categoryName = string.Empty;
         private List<Category> _categories = new List<Category>();
 
@@ -32,7 +32,7 @@ namespace Duo.ViewModels
             }
         }
 
-        public CategoryViewModel(CategoryService categoryService)
+        public CategoryViewModel(ICategoryService categoryService)
         {
             _categoryService = categoryService ?? throw new ArgumentNullException(nameof(categoryService));
             LoadCategories();
@@ -40,14 +40,7 @@ namespace Duo.ViewModels
 
         public void LoadCategories()
         {
-            try
-            {
                 Categories = _categoryService.GetAllCategories();
-            }
-            catch (Exception ex)
-            {
-                Categories = new List<Category>();
-            }
         }
 
         public List<string> GetCategoryNames()

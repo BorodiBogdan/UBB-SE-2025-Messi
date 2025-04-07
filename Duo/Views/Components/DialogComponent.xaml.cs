@@ -102,10 +102,10 @@ namespace Duo.Views.Components
                 else
                 {
                     // If there was an error in post creation, show the error
-                    if (!string.IsNullOrEmpty(dialogContent.ViewModel.Error))
+                    if (!string.IsNullOrEmpty(dialogContent.ViewModel.LastError))
                     {
                         // Show error message but keep dialog open
-                        System.Diagnostics.Debug.WriteLine($"DialogComponent: Post creation failed: {dialogContent.ViewModel.Error}");
+                        System.Diagnostics.Debug.WriteLine($"DialogComponent: Post creation failed: {dialogContent.ViewModel.LastError}");
                     }
                 }
             };
@@ -174,7 +174,7 @@ namespace Duo.Views.Components
                 // Check if user tried to change the category (comparing with original communityId)
                 if (communityId > 0 && dialogContent.ViewModel.SelectedCategoryId != communityId)
                 {
-                    dialogContent.ViewModel.Error = "Changing community/category is not allowed when editing a post.";
+                    dialogContent.ViewModel.LastError = "Changing community/category is not allowed when editing a post.";
                     e.Cancel = true;
                     return;
                 }

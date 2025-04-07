@@ -26,12 +26,9 @@ namespace Duo.Views.Components
                 _commentText = value;
                 try
                 {
-                    if (!string.IsNullOrWhiteSpace(value))
-                    {
-                        ValidationHelper.ValidateComment(value);
-                        ErrorMessage = string.Empty;
-                        HasError = false;
-                    }
+                    ValidationHelper.ValidateComment(value);
+                    ErrorMessage = string.Empty;
+                    HasError = false;
                 }
                 catch (ArgumentException ex)
                 {
@@ -63,13 +60,6 @@ namespace Duo.Views.Components
 
         private void SubmitButton_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(CommentText))
-            {
-                ErrorMessage = "Comment cannot be empty.";
-                HasError = true;
-                return;
-            }
-
             try
             {
                 ValidationHelper.ValidateComment(CommentText);

@@ -71,7 +71,8 @@ namespace Duo.Repositories
                 };
                 var result = _dataLink.ExecuteScalar<int>("CreateHashtag", sqlParameters);
 
-                if (result == QUERRY_ERROR) throw new Exception("Error - CreateHashtag: Hashtag could not be created!");
+                if (result == QUERRY_ERROR) 
+                    throw new Exception("Error - CreateHashtag: Hashtag could not be created!");
 
                 Hashtag newHashtag = new Hashtag(
                     result,
@@ -103,7 +104,7 @@ namespace Duo.Repositories
                 foreach (DataRow row in dataTable.Rows)
                 {
                     var tag = row["Tag"]?.ToString();
-                    if (tag == null)
+                    if (tag == "")
                     {
                         throw new Exception("Error - GetHashtagsByPostId: Tag is null");
                     }
@@ -129,7 +130,8 @@ namespace Duo.Repositories
         public bool AddHashtagToPost(int postId, int hashtagId)
         {
             if (postId <= INVALID) throw new Exception("Error - AddHashtagToPost: PostId must be greater than 0");
-            if (hashtagId <= INVALID) throw new Exception("Error - AddHashtagToPost: HashtagId must be greater than 0");
+            if (hashtagId <= INVALID) 
+                throw new Exception("Error - AddHashtagToPost: HashtagId must be greater than 0");
             
             try
             {
@@ -156,7 +158,8 @@ namespace Duo.Repositories
         public bool RemoveHashtagFromPost(int postId, int hashtagId)
         {
             if (postId <= INVALID) throw new Exception("Error - RemoveHashtagFromPost: PostId must be greater than 0");
-            if (hashtagId <= INVALID) throw new Exception("Error - RemoveHashtagFromPost: HashtagId must be greater than 0");
+            if (hashtagId <= INVALID) 
+                throw new Exception("Error - RemoveHashtagFromPost: HashtagId must be greater than 0");
             try
             {
                 var sqlParameters = new SqlParameter[]
@@ -165,7 +168,8 @@ namespace Duo.Repositories
                     new SqlParameter("@HashtagID", hashtagId)
                 };
                 var queryResult = _dataLink.ExecuteNonQuery("DeleteHashtagFromPost", sqlParameters);
-                if (queryResult == QUERRY_ERROR) throw new Exception("Error - RemoveHashtagFromPost: Hashtag could not be removed from post!");
+                if (queryResult == QUERRY_ERROR) 
+                    throw new Exception("Error - RemoveHashtagFromPost: Hashtag could not be removed from post!");
                 return true;
             }
             catch (Exception caughtException)
@@ -192,7 +196,7 @@ namespace Duo.Repositories
                 foreach (DataRow row in dataTable.Rows)
                 {
                     var tag = row["Tag"]?.ToString();
-                    if (tag == null)
+                    if (tag == "")
                     {
                         continue;
                     }
@@ -236,7 +240,7 @@ namespace Duo.Repositories
                 foreach (DataRow row in dataTable.Rows)
                 {
                     var tag = row["Tag"]?.ToString();
-                    if (tag == null)
+                    if (tag == "")
                     {
                         continue;
                     }

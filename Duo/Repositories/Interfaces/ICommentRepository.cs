@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Duo.Repositories.Interfaces
 {
-    internal interface ICommentRepository
+    public interface ICommentRepository
     {
         public Comment GetCommentById(int commentId);
 
