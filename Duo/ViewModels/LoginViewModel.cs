@@ -8,12 +8,13 @@ using System.Runtime.CompilerServices;
 using Duo.Commands;
 using Duo.ViewModels.Base;
 using Duo.Helpers;
+using Duo.Services.Interfaces;
 
 namespace Duo.ViewModels
 {
     public class LoginViewModel : ViewModelBase
     {
-        private readonly UserService _userService;
+        private readonly IUserService _userService;
         private string _username = string.Empty;
         private string _errorMessage = string.Empty;
         private bool _hasError = false;
@@ -46,7 +47,7 @@ namespace Duo.ViewModels
 
         public ICommand LoginCommand { get; }
 
-        public LoginViewModel(UserService userService)
+        public LoginViewModel(IUserService userService)
         {
             _userService = userService ?? throw new ArgumentNullException(nameof(userService));
             LoginCommand = new RelayCommand(Login, CanLogin);

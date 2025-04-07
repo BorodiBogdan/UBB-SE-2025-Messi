@@ -16,4 +16,4 @@ namespace Duo.Converters
             return value is Visibility v && v == Visibility.Visible;
         }
     }
-} 
+}  

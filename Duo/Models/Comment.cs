@@ -90,5 +90,9 @@ namespace Duo.Models
             get { return _username; }
             set { _username = value; }
         }
+        public void IncrementLikeCount()
+        {
+            LikeCount++;
+        }
     }
 }
