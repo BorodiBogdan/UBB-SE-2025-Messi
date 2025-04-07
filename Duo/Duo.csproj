@@ -1,19 +1,19 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-<PropertyGroup>
-  <OutputType>WinExe</OutputType>
-  <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
-  <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
-  <RootNamespace>Duo</RootNamespace>
-  <ApplicationManifest>app.manifest</ApplicationManifest>
-  <Platforms>x86;x64;ARM64</Platforms>
-  <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
-  <PublishProfile>win-$(Platform).pubxml</PublishProfile>
-  <UseWinUI>true</UseWinUI>
-  <EnableMsixTooling>true</EnableMsixTooling>
-  <Nullable>enable</Nullable>
-  <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
-  <EnableWindowsTargeting>true</EnableWindowsTargeting>
-</PropertyGroup>
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+		<TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+		<RootNamespace>Duo</RootNamespace>
+		<ApplicationManifest>app.manifest</ApplicationManifest>
+		<Platforms>x86;x64;ARM64</Platforms>
+		<RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
+		<PublishProfile>win-$(Platform).pubxml</PublishProfile>
+		<UseWinUI>true</UseWinUI>
+		<EnableMsixTooling>true</EnableMsixTooling>
+		<Nullable>enable</Nullable>
+		<WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+		<EnableWindowsTargeting>true</EnableWindowsTargeting>
+	</PropertyGroup>
 
 <ItemGroup>
 <Content Include="Assets\SplashScreen.scale-200.png" />
@@ -34,45 +34,49 @@
     Tools extension to be activated for this project even if the Windows App SDK Nuget
     package has not yet been restored.
   -->
-<ItemGroup Condition="'$(DisableMsixProjectCapabilityAddedByProject)'!='true' and '$(EnableMsixTooling)'=='true'">
-<ProjectCapability Include="Msix" />
-</ItemGroup>
-<ItemGroup>
-<PackageReference Include="Microsoft.Data.SqlClient" Version="6.0.1" />
-<PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.3" />
-<PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.3" />
-<PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.1742" />
-<PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250310001" />
-<PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3124.44" />
-<PackageReference Include="CommunityToolkit.WinUI.UI.Controls.Markdown" Version="7.1.2" />
-<PackageReference Include="Moq" Version="4.20.72" />
-<PackageReference Include="MSTest.TestFramework" Version="3.8.3" />
-</ItemGroup>
-<ItemGroup>
-<Folder Include="Data\Queries\Category\GetByName\" />
-<Folder Include="Data\Queries\Comment\DeleteComment\" />
-<Folder Include="Data\Queries\Comment\GetAll\" />
-<Folder Include="Data\Queries\Comment\GetCommentByID\" />
-<Folder Include="Data\Queries\Comment\IncrementLikeCount\" />
-<Folder Include="Data\Queries\Comment\Update\" />
-<Folder Include="Data\Queries\Post\GetAllPosts\" />
-<Folder Include="Data\Queries\Post\GetAll\" />
-<Folder Include="Data\Queries\Post\Search\" />
-<Folder Include="Data\Queries\Hashtag\GetHashtagByText\" />
-<Folder Include="Data\Queries\PostHashtag\AddHashtagToPost\" />
-<Folder Include="Data\Queries\PostHashtag\DeleteHashtagFromPost\" />
-<Folder Include="Data\Queries\PostHashtag\GetHashtagsForPost\" />
-</ItemGroup>
-<ItemGroup>
-<Compile Update="MainWindow.xaml.cs">
-<CopyToOutputDirectory>Always</CopyToOutputDirectory>
-</Compile>
-</ItemGroup>
-<ItemGroup>
-<None Update="appsettings.json">
-<CopyToOutputDirectory>Always</CopyToOutputDirectory>
-</None>
-</ItemGroup>
+	<ItemGroup Condition="'$(DisableMsixProjectCapabilityAddedByProject)'!='true' and '$(EnableMsixTooling)'=='true'">
+		<ProjectCapability Include="Msix" />
+	</ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Data.SqlClient" Version="6.0.1" />
+		<PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.3" />
+		<PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.3" />
+		<PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.1742" />
+		<PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250310001" />
+		<PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3124.44" />
+		<PackageReference Include="CommunityToolkit.WinUI.UI.Controls.Markdown" Version="7.1.2" />
+		<PackageReference Include="Moq" Version="4.20.72" />
+		<PackageReference Include="MSTest.TestFramework" Version="3.8.3" />
+		<PackageReference Include="StyleCop.Analyzers" Version="1.1.118">
+		  <PrivateAssets>all</PrivateAssets>
+		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+	</ItemGroup>
+	<ItemGroup>
+		<Folder Include="Data\Queries\Category\GetByName\" />
+		<Folder Include="Data\Queries\Comment\DeleteComment\" />
+		<Folder Include="Data\Queries\Comment\GetAll\" />
+		<Folder Include="Data\Queries\Comment\GetCommentByID\" />
+		<Folder Include="Data\Queries\Comment\IncrementLikeCount\" />
+		<Folder Include="Data\Queries\Comment\Update\" />
+		<Folder Include="Data\Queries\Post\GetAllPosts\" />
+		<Folder Include="Data\Queries\Post\GetAll\" />
+		<Folder Include="Data\Queries\Post\Search\" />
+		<Folder Include="Data\Queries\Hashtag\GetHashtagByText\" />
+		<Folder Include="Data\Queries\PostHashtag\AddHashtagToPost\" />
+		<Folder Include="Data\Queries\PostHashtag\DeleteHashtagFromPost\" />
+		<Folder Include="Data\Queries\PostHashtag\GetHashtagsForPost\" />
+	</ItemGroup>
+	<ItemGroup>
+		<Compile Update="MainWindow.xaml.cs">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</Compile>
+	</ItemGroup>
+	<ItemGroup>
+		<None Update="appsettings.json">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
 
 <!--
     Defining the "HasPackageAndPublishMenuAddedByProject" property here allows the Solution
@@ -83,11 +87,14 @@
 <HasPackageAndPublishMenu>true</HasPackageAndPublishMenu>
 </PropertyGroup>
 
-<!-- Publish Properties -->
-<PropertyGroup>
-<PublishReadyToRun Condition="'$(Configuration)' == 'Debug'">False</PublishReadyToRun>
-<PublishReadyToRun Condition="'$(Configuration)' != 'Debug'">True</PublishReadyToRun>
-<PublishTrimmed Condition="'$(Configuration)' == 'Debug'">False</PublishTrimmed>
-<PublishTrimmed Condition="'$(Configuration)' != 'Debug'">True</PublishTrimmed>
-</PropertyGroup>
+	<!-- Publish Properties -->
+	<PropertyGroup>
+		<PublishReadyToRun Condition="'$(Configuration)' == 'Debug'">False</PublishReadyToRun>
+		<PublishReadyToRun Condition="'$(Configuration)' != 'Debug'">True</PublishReadyToRun>
+		<PublishTrimmed Condition="'$(Configuration)' == 'Debug'">False</PublishTrimmed>
+		<PublishTrimmed Condition="'$(Configuration)' != 'Debug'">True</PublishTrimmed>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+		<CodeAnalysisRuleSet>SE.ruleset</CodeAnalysisRuleSet>
+	</PropertyGroup>
 </Project>

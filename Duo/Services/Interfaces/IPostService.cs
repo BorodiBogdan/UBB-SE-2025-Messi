@@ -18,6 +18,7 @@ namespace Duo.Services.Interfaces
         int GetPostCountByHashtags(List<string> hashtagList);
         List<Hashtag> GetAllHashtags();
         List<Hashtag> GetHashtagsByCategory(int categoryId);
+        List<Hashtag> GetHashtags(int? categoryId);
         List<Post> GetPostsByHashtags(List<string> hashtagList, int pageNumber, int pageSize);
         bool ValidatePostOwnership(int authorUserId, int targetPostId);
         List<Hashtag> GetHashtagsByPostId(int postId);
@@ -25,5 +26,12 @@ namespace Duo.Services.Interfaces
         bool AddHashtagToPost(int postId, string hashtagName, int userId);
         bool RemoveHashtagFromPost(int postId, int hashtagId, int userId);
         int CreatePostWithHashtags(Post newPost, List<string> hashtagList, int authorId);
+        (List<Post> Posts, int TotalCount) GetFilteredAndFormattedPosts(
+            int? categoryId,
+            List<string> selectedHashtags,
+            string filterText,
+            int currentPage,
+            int itemsPerPage);
+        HashSet<string> ToggleHashtagSelection(HashSet<string> currentHashtags, string hashtagToToggle, string allHashtagsFilter);
     }
 } 
