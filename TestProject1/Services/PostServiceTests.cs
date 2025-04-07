@@ -2221,5 +2221,115 @@ namespace TestProject1.Services
         }
 
         #endregion
+
+        #region AddAllHashtagsToPost Tests
+
+        [Fact]
+        public void AddAllHashtagsToPost_ValidHashtags_AllAddedSuccessfully()
+        {
+            // Arrange
+            int postId = 1;
+            int userId = 1;
+            string[] hashtags = new[] { "test1", "test2" };
+            
+            var post = new Post { Id = postId, UserID = userId };
+            var currentUser = new User(userId, "TestUser");
+            
+            _mockPostRepository.Setup(x => x.GetPostById(postId))
+                .Returns(post);
+            _mockUserService.Setup(x => x.GetCurrentUser())
+                .Returns(currentUser);
+            _mockHashtagRepository.Setup(x => x.GetHashtagByText("test1"))
+                .Returns(new Hashtag(1, "test1"));
+            _mockHashtagRepository.Setup(x => x.GetHashtagByText("test2"))
+                .Returns(new Hashtag(2, "test2"));
+            _mockHashtagRepository.Setup(x => x.CreateHashtag("test1"))
+                .Returns(new Hashtag(1, "test1"));
+            _mockHashtagRepository.Setup(x => x.CreateHashtag("test2"))
+                .Returns(new Hashtag(2, "test2"));
+            _mockHashtagRepository.Setup(x => x.AddHashtagToPost(postId, 1))
+                .Returns(true);
+            _mockHashtagRepository.Setup(x => x.AddHashtagToPost(postId, 2))
+                .Returns(true);
+
+            // Act
+            _postService.AddAllHashtagsToPost(postId, hashtags, userId);
+
+            // Assert
+            _mockPostRepository.Verify(x => x.GetPostById(postId), Times.Exactly(2));
+            _mockUserService.Verify(x => x.GetCurrentUser(), Times.Exactly(2));
+            _mockHashtagRepository.Verify(x => x.GetHashtagByText("test1"), Times.Once);
+            _mockHashtagRepository.Verify(x => x.GetHashtagByText("test2"), Times.Once);
+            _mockHashtagRepository.Verify(x => x.CreateHashtag("test1"), Times.Once);
+            _mockHashtagRepository.Verify(x => x.CreateHashtag("test2"), Times.Once);
+            _mockHashtagRepository.Verify(x => x.AddHashtagToPost(postId, 1), Times.Once);
+            _mockHashtagRepository.Verify(x => x.AddHashtagToPost(postId, 2), Times.Once);
+        }
+
+        [Fact]
+        public void AddAllHashtagsToPost_SomeHashtagsFail_ContinuesProcessing()
+        {
+            // Arrange
+            int postId = 1;
+            int userId = 1;
+            string[] hashtags = new[] { "test1", "error", "test3" };
+            
+            var post = new Post { Id = postId, UserID = userId };
+            var currentUser = new User(userId, "TestUser");
+            
+            _mockPostRepository.Setup(x => x.GetPostById(postId))
+                .Returns(post);
+            _mockUserService.Setup(x => x.GetCurrentUser())
+                .Returns(currentUser);
+            _mockHashtagRepository.Setup(x => x.GetHashtagByText("test1"))
+                .Returns(new Hashtag(1, "test1"));
+            _mockHashtagRepository.Setup(x => x.GetHashtagByText("error"))
+                .Throws(new Exception("Test error"));
+            _mockHashtagRepository.Setup(x => x.GetHashtagByText("test3"))
+                .Returns(new Hashtag(3, "test3"));
+            _mockHashtagRepository.Setup(x => x.CreateHashtag("test1"))
+                .Returns(new Hashtag(1, "test1"));
+            _mockHashtagRepository.Setup(x => x.CreateHashtag("test3"))
+                .Returns(new Hashtag(3, "test3"));
+            _mockHashtagRepository.Setup(x => x.AddHashtagToPost(postId, 1))
+                .Returns(true);
+            _mockHashtagRepository.Setup(x => x.AddHashtagToPost(postId, 3))
+                .Returns(true);
+
+            // Act
+            _postService.AddAllHashtagsToPost(postId, hashtags, userId);
+
+            // Assert
+            _mockPostRepository.Verify(x => x.GetPostById(postId), Times.Exactly(3));
+            _mockUserService.Verify(x => x.GetCurrentUser(), Times.Exactly(3));
+            _mockHashtagRepository.Verify(x => x.GetHashtagByText("test1"), Times.Once);
+            _mockHashtagRepository.Verify(x => x.GetHashtagByText("error"), Times.Once);
+            _mockHashtagRepository.Verify(x => x.GetHashtagByText("test3"), Times.Once);
+            _mockHashtagRepository.Verify(x => x.CreateHashtag("test1"), Times.Once);
+            _mockHashtagRepository.Verify(x => x.CreateHashtag("test3"), Times.Once);
+            _mockHashtagRepository.Verify(x => x.AddHashtagToPost(postId, 1), Times.Once);
+            _mockHashtagRepository.Verify(x => x.AddHashtagToPost(postId, 3), Times.Once);
+        }
+
+        [Fact]
+        public void AddAllHashtagsToPost_EmptyArray_NoCallsMade()
+        {
+            // Arrange
+            int postId = 1;
+            int userId = 1;
+            string[] hashtags = Array.Empty<string>();
+
+            // Act
+            _postService.AddAllHashtagsToPost(postId, hashtags, userId);
+
+            // Assert
+            _mockPostRepository.Verify(x => x.GetPostById(It.IsAny<int>()), Times.Never);
+            _mockUserService.Verify(x => x.GetCurrentUser(), Times.Never);
+            _mockHashtagRepository.Verify(x => x.GetHashtagByText(It.IsAny<string>()), Times.Never);
+            _mockHashtagRepository.Verify(x => x.CreateHashtag(It.IsAny<string>()), Times.Never);
+            _mockHashtagRepository.Verify(x => x.AddHashtagToPost(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+        }
+
+        #endregion
     }
 } 
