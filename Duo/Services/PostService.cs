@@ -1,41 +1,54 @@
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using Microsoft.Data.SqlClient;
-using Duo.Models;
-using Duo.Services;
-using Duo.Services.Interfaces;
-using Duo.Repositories;
-using Duo.Repositories.Interfaces;
-using System.Diagnostics;
-using System.Linq;
-using Duo.Repositories.Interfaces;
+// <copyright file="PostService.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
 
 namespace Duo.Services
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Collections.ObjectModel;
+    using System.Diagnostics;
+    using System.Linq;
+    using Duo.Models;
+    using Duo.Repositories;
+    using Duo.Repositories.Interfaces;
+    using Duo.Services;
+    using Duo.Services.Interfaces;
+    using Microsoft.Data.SqlClient;
+
+    /// <summary>
+    /// Service class for managing post-related operations.
+    /// </summary>
     public class PostService : IPostService
     {
-        private readonly IPostRepository _postRepository;
-        private readonly IHashtagRepository _hashtagRepository;
-        private readonly IUserService _userService;
-        private readonly ISearchService _searchService;
-        private const double FUZZY_SEARCH_SCORE_DEFAULT_THRESHOLD = 0.6;
-        
-        // Constants for validation
-        private const int INVALID_ID = 0;
-        private const int MIN_PAGE_NUMBER = 1;
-        private const int MIN_PAGE_SIZE = 1;
-        private const int DEFAULT_COUNT = 0;
-        private const int DEFAULT_PAGE_NUMBER = 1;
 
+        // Constants for validation
+        private const int INVALIDID = 0;
+        private const int MINPAGENUMBER = 1;
+        private const int MINPAGESIZE = 1;
+        private const int DEFAULTCOUNT = 0;
+
+        private readonly IPostRepository postRepository;
+        private readonly IHashtagRepository hashtagRepository;
+        private readonly IUserService userService;
+        private readonly ISearchService searchService;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PostService"/> class.
+        /// </summary>
+        /// <param name="postRepository">The post repository instance.</param>
+        /// <param name="hashtagRepository">The hashtag repository instance.</param>
+        /// <param name="userService">The user service instance.</param>
+        /// <param name="searchService">The search service instance.</param>
         public PostService(IPostRepository postRepository, IHashtagRepository hashtagRepository, IUserService userService, ISearchService searchService)
         {
-            _postRepository = postRepository;
-            _hashtagRepository = hashtagRepository;
-            _userService = userService;
-            _searchService = searchService;
+            this.postRepository = postRepository;
+            this.hashtagRepository = hashtagRepository;
+            this.userService = userService;
+            this.searchService = searchService;
         }
 
+        /// <inheritdoc/>
         public int CreatePost(Post newPost)
         {
             if (string.IsNullOrWhiteSpace(newPost.Title) || string.IsNullOrWhiteSpace(newPost.Description))
@@ -45,7 +58,7 @@ namespace Duo.Services
 
             try
             {
-                return _postRepository.CreatePost(newPost);
+                return this.postRepository.CreatePost(newPost);
             }
             catch (Exception ex)
             {
@@ -53,16 +66,17 @@ namespace Duo.Services
             }
         }
 
+        /// <inheritdoc/>
         public void DeletePost(int postId)
         {
-            if (postId <= INVALID_ID)
+            if (postId <= INVALIDID)
             {
                 throw new ArgumentException("Invalid Post ID.");
             }
 
             try
             {
-                _postRepository.DeletePost(postId);
+                this.postRepository.DeletePost(postId);
             }
             catch (Exception ex)
             {
@@ -70,9 +84,10 @@ namespace Duo.Services
             }
         }
 
+        /// <inheritdoc/>
         public void UpdatePost(Post postToUpdate)
         {
-            if (postToUpdate.Id <= INVALID_ID)
+            if (postToUpdate.Id <= INVALIDID)
             {
                 throw new ArgumentException("Invalid Post ID.");
             }
@@ -80,7 +95,7 @@ namespace Duo.Services
             try
             {
                 postToUpdate.UpdatedAt = DateTime.UtcNow;
-                _postRepository.UpdatePost(postToUpdate);
+                this.postRepository.UpdatePost(postToUpdate);
             }
             catch (Exception ex)
             {
@@ -88,16 +103,17 @@ namespace Duo.Services
             }
         }
 
+        /// <inheritdoc/>
         public Post? GetPostById(int postId)
         {
-            if (postId <= INVALID_ID)
+            if (postId <= INVALIDID)
             {
                 throw new ArgumentException("Invalid Post ID.");
             }
 
             try
             {
-                return _postRepository.GetPostById(postId);
+                return this.postRepository.GetPostById(postId);
             }
             catch (Exception ex)
             {
@@ -105,16 +121,17 @@ namespace Duo.Services
             }
         }
 
+        /// <inheritdoc/>
         public Collection<Post> GetPostsByCategory(int categoryId, int pageNumber, int pageSize)
         {
-            if (categoryId <= INVALID_ID || pageNumber < MIN_PAGE_NUMBER || pageSize < MIN_PAGE_SIZE)
+            if (categoryId <= INVALIDID || pageNumber < MINPAGENUMBER || pageSize < MINPAGESIZE)
             {
                 throw new ArgumentException("Invalid pagination parameters.");
             }
 
             try
             {
-                return _postRepository.GetPostsByCategoryId(categoryId, pageNumber, pageSize);
+                return this.postRepository.GetPostsByCategoryId(categoryId, pageNumber, pageSize);
             }
             catch (Exception ex)
             {
@@ -122,16 +139,17 @@ namespace Duo.Services
             }
         }
 
+        /// <inheritdoc/>
         public List<Post> GetPaginatedPosts(int pageNumber, int pageSize)
         {
-            if (pageNumber < MIN_PAGE_NUMBER || pageSize < MIN_PAGE_SIZE)
+            if (pageNumber < MINPAGENUMBER || pageSize < MINPAGESIZE)
             {
                 throw new ArgumentException("Invalid pagination parameters.");
             }
 
             try
             {
-                return _postRepository.GetPaginatedPosts(pageNumber, pageSize);
+                return this.postRepository.GetPaginatedPosts(pageNumber, pageSize);
             }
             catch (Exception ex)
             {
@@ -139,11 +157,12 @@ namespace Duo.Services
             }
         }
 
+        /// <inheritdoc/>
         public int GetTotalPostCount()
         {
             try
             {
-                return _postRepository.GetTotalPostCount();
+                return this.postRepository.GetTotalPostCount();
             }
             catch (Exception ex)
             {
@@ -151,16 +170,17 @@ namespace Duo.Services
             }
         }
 
+        /// <inheritdoc/>
         public int GetPostCountByCategoryId(int categoryId)
         {
-            if (categoryId <= INVALID_ID)
+            if (categoryId <= INVALIDID)
             {
                 throw new ArgumentException("Invalid Category ID.");
             }
 
             try
             {
-                return _postRepository.GetPostCountByCategory(categoryId);
+                return this.postRepository.GetPostCountByCategory(categoryId);
             }
             catch (Exception ex)
             {
@@ -168,22 +188,23 @@ namespace Duo.Services
             }
         }
 
+        /// <inheritdoc/>
         public int GetPostCountByHashtags(List<string> hashtagList)
         {
-            if (hashtagList == null || hashtagList.Count == DEFAULT_COUNT)
+            if (hashtagList == null || hashtagList.Count == DEFAULTCOUNT)
             {
-                return GetTotalPostCount();
+                return this.GetTotalPostCount();
             }
 
             List<string> filteredHashtags = hashtagList.Where(h => !string.IsNullOrWhiteSpace(h)).ToList();
-            if (filteredHashtags.Count == DEFAULT_COUNT)
+            if (filteredHashtags.Count == DEFAULTCOUNT)
             {
-                return GetTotalPostCount();
+                return this.GetTotalPostCount();
             }
 
             try
             {
-                return _postRepository.GetPostCountByHashtags(filteredHashtags);
+                return this.postRepository.GetPostCountByHashtags(filteredHashtags);
             }
             catch (Exception ex)
             {
@@ -191,11 +212,12 @@ namespace Duo.Services
             }
         }
 
+        /// <inheritdoc/>
         public List<Hashtag> GetAllHashtags()
         {
             try
             {
-                return _hashtagRepository.GetAllHashtags();
+                return this.hashtagRepository.GetAllHashtags();
             }
             catch (Exception ex)
             {
@@ -203,16 +225,17 @@ namespace Duo.Services
             }
         }
 
+        /// <inheritdoc/>
         public List<Hashtag> GetHashtagsByCategory(int categoryId)
         {
-            if (categoryId <= INVALID_ID)
+            if (categoryId <= INVALIDID)
             {
                 throw new ArgumentException("Invalid Category ID.");
             }
 
             try
             {
-                return _hashtagRepository.GetHashtagsByCategory(categoryId);
+                return this.hashtagRepository.GetHashtagsByCategory(categoryId);
             }
             catch (Exception ex)
             {
@@ -220,27 +243,28 @@ namespace Duo.Services
             }
         }
 
+        /// <inheritdoc/>
         public List<Post> GetPostsByHashtags(List<string> hashtagList, int pageNumber, int pageSize)
         {
-            if (pageNumber < MIN_PAGE_NUMBER || pageSize < MIN_PAGE_SIZE)
+            if (pageNumber < MINPAGENUMBER || pageSize < MINPAGESIZE)
             {
                 throw new ArgumentException("Invalid pagination parameters.");
             }
 
-            if (hashtagList == null || hashtagList.Count == DEFAULT_COUNT)
+            if (hashtagList == null || hashtagList.Count == DEFAULTCOUNT)
             {
-                return GetPaginatedPosts(pageNumber, pageSize);
+                return this.GetPaginatedPosts(pageNumber, pageSize);
             }
 
             List<string> filteredHashtags = hashtagList.Where(h => !string.IsNullOrWhiteSpace(h)).ToList();
-            if (filteredHashtags.Count == DEFAULT_COUNT)
+            if (filteredHashtags.Count == DEFAULTCOUNT)
             {
-                return GetPaginatedPosts(pageNumber, pageSize);
+                return this.GetPaginatedPosts(pageNumber, pageSize);
             }
 
             try
             {
-                return _postRepository.GetPostsByHashtags(filteredHashtags, pageNumber, pageSize);
+                return this.postRepository.GetPostsByHashtags(filteredHashtags, pageNumber, pageSize);
             }
             catch (Exception ex)
             {
@@ -248,19 +272,21 @@ namespace Duo.Services
             }
         }
 
+        /// <inheritdoc/>
         public bool ValidatePostOwnership(int authorUserId, int targetPostId)
         {
-            int? postOwnerId = _postRepository.GetUserIdByPostId(targetPostId);
+            int? postOwnerId = this.postRepository.GetUserIdByPostId(targetPostId);
             return authorUserId == postOwnerId;
         }
 
+        /// <inheritdoc/>
         public List<Hashtag> GetHashtagsByPostId(int postId)
         {
-            if (postId <= INVALID_ID) throw new ArgumentException("Invalid Post ID.");
+            if (postId <= INVALIDID) throw new ArgumentException("Invalid Post ID.");
 
             try
             {
-                return _hashtagRepository.GetHashtagsByPostId(postId);
+                return this.hashtagRepository.GetHashtagsByPostId(postId);
             }
             catch (Exception ex)
             {
@@ -268,18 +294,25 @@ namespace Duo.Services
             }
         }
 
+        /// <inheritdoc/>
         public bool LikePost(int postId)
         {
-            if (postId <= INVALID_ID) throw new ArgumentException("Invalid Post ID.");
+            if (postId <= INVALIDID)
+            {
+                throw new ArgumentException("Invalid Post ID.");
+            }
 
             try
             {
-                var targetPost = _postRepository.GetPostById(postId);
-                if (targetPost == null) throw new Exception("Post not found");
+                var targetPost = this.postRepository.GetPostById(postId);
+                if (targetPost == null)
+                {
+                    throw new Exception("Post not found");
+                }
 
                 targetPost.LikeCount++;
 
-                _postRepository.UpdatePost(targetPost);
+                this.postRepository.UpdatePost(targetPost);
                 return true;
             }
             catch (Exception ex)
@@ -288,42 +321,43 @@ namespace Duo.Services
             }
         }
 
+        /// <inheritdoc/>
         public bool AddHashtagToPost(int postId, string hashtagName, int userId)
         {
-            if (postId <= INVALID_ID)
+            if (postId <= INVALIDID)
             {
                 throw new ArgumentException("Invalid Post ID.");
             }
-            
+
             if (string.IsNullOrWhiteSpace(hashtagName))
             {
                 throw new ArgumentException("Tag name cannot be empty.");
             }
-            
-            if (userId <= INVALID_ID)
+
+            if (userId <= INVALIDID)
             {
                 throw new ArgumentException("Invalid User ID.");
             }
 
             try
             {
-                var targetPost = _postRepository.GetPostById(postId);
+                var targetPost = this.postRepository.GetPostById(postId);
                 if (targetPost == null)
                 {
                     throw new Exception($"Post with ID {postId} not found");
                 }
-                
-                if (_userService.GetCurrentUser().UserId != userId)
+
+                if (this.userService.GetCurrentUser().UserId != userId)
                 {
                     throw new Exception("User does not have permission to add hashtags to this post.");
                 }
 
                 Hashtag? existingHashtag = null;
-                existingHashtag = _hashtagRepository.GetHashtagByText(hashtagName);
+                existingHashtag = this.hashtagRepository.GetHashtagByText(hashtagName);
 
-                Hashtag hashtag = _hashtagRepository.CreateHashtag(hashtagName);
+                Hashtag hashtag = this.hashtagRepository.CreateHashtag(hashtagName);
 
-                bool addResult = _hashtagRepository.AddHashtagToPost(postId, hashtag.Id);
+                bool addResult = this.hashtagRepository.AddHashtagToPost(postId, hashtag.Id);
                 return addResult;
             }
             catch (Exception ex)
@@ -332,18 +366,32 @@ namespace Duo.Services
             }
         }
 
+        /// <inheritdoc/>
         public bool RemoveHashtagFromPost(int postId, int hashtagId, int userId)
         {
-            if (postId <= INVALID_ID) throw new ArgumentException("Invalid Post ID.");
-            if (hashtagId <= INVALID_ID) throw new ArgumentException("Invalid Hashtag ID.");
-            if (userId <= INVALID_ID) throw new ArgumentException("Invalid User ID.");
+            if (postId <= INVALIDID)
+            {
+                throw new ArgumentException("Invalid Post ID.");
+            }
+
+            if (hashtagId <= INVALIDID)
+            {
+                throw new ArgumentException("Invalid Hashtag ID.");
+            }
+
+            if (userId <= INVALIDID)
+            {
+                throw new ArgumentException("Invalid User ID.");
+            }
 
             try
             {
-                if (_userService.GetCurrentUser().UserId != userId)
+                if (this.userService.GetCurrentUser().UserId != userId)
+                {
                     throw new Exception("User does not have permission to remove hashtags from this post.");
+                }
 
-                return _hashtagRepository.RemoveHashtagFromPost(postId, hashtagId);
+                return this.hashtagRepository.RemoveHashtagFromPost(postId, hashtagId);
             }
             catch (Exception ex)
             {
@@ -351,7 +399,7 @@ namespace Duo.Services
             }
         }
 
-
+        /// <inheritdoc/>
         public int CreatePostWithHashtags(Post newPost, List<string> hashtagList, int authorId)
         {
             if (string.IsNullOrWhiteSpace(newPost.Title) || string.IsNullOrWhiteSpace(newPost.Description))
@@ -361,38 +409,37 @@ namespace Duo.Services
 
             try
             {
-                int createdPostId = _postRepository.CreatePost(newPost);
-                
-                if (createdPostId <= INVALID_ID)
+                int createdPostId = this.postRepository.CreatePost(newPost);
+
+                if (createdPostId <= INVALIDID)
                 {
                     throw new Exception("Failed to create post: Invalid post ID returned from database");
                 }
-                
+
                 try
                 {
-                    var createdPost = _postRepository.GetPostById(createdPostId);
+                    var createdPost = this.postRepository.GetPostById(createdPostId);
                 }
                 catch (Exception ex)
                 {
                 }
-                
-                if (hashtagList != null && hashtagList.Count > DEFAULT_COUNT)
-                {    
+
+                if (hashtagList != null && hashtagList.Count > DEFAULTCOUNT)
+                {
                     foreach (var hashtagName in hashtagList)
                     {
                         try
                         {
-                            Hashtag? existingHashtag = _hashtagRepository.GetHashtagByText(hashtagName);
-                            Hashtag hashtag = _hashtagRepository.CreateHashtag(hashtagName);
-                            
-                            bool addSuccess = _hashtagRepository.AddHashtagToPost(createdPostId, hashtag.Id);
+                            Hashtag? existingHashtag = this.hashtagRepository.GetHashtagByText(hashtagName);
+                            Hashtag hashtag = this.hashtagRepository.CreateHashtag(hashtagName);
+                            bool addSuccess = this.hashtagRepository.AddHashtagToPost(createdPostId, hashtag.Id);
                         }
                         catch (Exception ex)
                         {
                         }
                     }
                 }
-                
+
                 return createdPostId;
             }
             catch (Exception ex)
@@ -400,18 +447,37 @@ namespace Duo.Services
                 if (ex.InnerException != null)
                 {
                 }
+
                 throw new Exception($"Error creating post with hashtags: {ex.Message}", ex);
             }
         }
 
+        /// <summary>
+        /// Gets hashtags based on an optional category ID.
+        /// </summary>
+        /// <param name="categoryId">The optional category ID to filter hashtags.</param>
+        /// <returns>A list of hashtags, either all hashtags or filtered by category.</returns>
         public List<Hashtag> GetHashtags(int? categoryId)
         {
-            if(categoryId == null || categoryId <= INVALID_ID)
-                    return GetAllHashtags();
-            return GetHashtagsByCategory(categoryId.Value);
+            if (categoryId == null || categoryId <= INVALIDID)
+            {
+                return this.GetAllHashtags();
+            }
 
+            return this.GetHashtagsByCategory(categoryId.Value);
         }
 
+        /// <summary>
+        /// Gets filtered and formatted posts based on various criteria.
+        /// </summary>
+        /// <param name="categoryId">The optional category ID to filter posts.</param>
+        /// <param name="selectedHashtags">The list of selected hashtags to filter posts.</param>
+        /// <param name="filterText">The text to filter posts by title.</param>
+        /// <param name="currentPage">The current page number.</param>
+        /// <param name="itemsPerPage">The number of items per page.</param>
+        /// <returns>A tuple containing the filtered posts and total count.</returns>
+        /// <exception cref="ArgumentException">Thrown when pagination parameters are invalid.</exception>
+        /// <exception cref="Exception">Thrown when an error occurs during post retrieval or formatting.</exception>
         public (List<Post> Posts, int TotalCount) GetFilteredAndFormattedPosts(
             int? categoryId,
             List<string> selectedHashtags,
@@ -419,7 +485,7 @@ namespace Duo.Services
             int currentPage,
             int itemsPerPage)
         {
-            if (currentPage < MIN_PAGE_NUMBER || itemsPerPage < MIN_PAGE_SIZE)
+            if (currentPage < MINPAGENUMBER || itemsPerPage < MINPAGESIZE)
             {
                 throw new ArgumentException("Invalid pagination parameters.");
             }
@@ -429,34 +495,36 @@ namespace Duo.Services
                 IEnumerable<Post> filteredPosts;
                 int totalCount;
 
-                if (selectedHashtags.Count > DEFAULT_COUNT && !selectedHashtags.Contains("All"))
+                if (selectedHashtags.Count > DEFAULTCOUNT && !selectedHashtags.Contains("All"))
                 {
-                    filteredPosts = GetPostsByHashtags(selectedHashtags, currentPage, itemsPerPage);
-                    totalCount = GetPostCountByHashtags(selectedHashtags);
+                    filteredPosts = this.GetPostsByHashtags(selectedHashtags, currentPage, itemsPerPage);
+                    totalCount = this.GetPostCountByHashtags(selectedHashtags);
                 }
-                else if (categoryId.HasValue && categoryId.Value > INVALID_ID)
+                else if (categoryId.HasValue && categoryId.Value > INVALIDID)
                 {
                     if (!string.IsNullOrEmpty(filterText))
                     {
-                        filteredPosts = GetPostsByCategory(categoryId.Value, DEFAULT_PAGE_NUMBER, int.MaxValue);
+                        filteredPosts = this.GetPostsByCategory(categoryId.Value, MINPAGENUMBER, int.MaxValue);
                     }
                     else
                     {
-                        filteredPosts = GetPostsByCategory(categoryId.Value, currentPage, itemsPerPage);
+                        filteredPosts = this.GetPostsByCategory(categoryId.Value, currentPage, itemsPerPage);
                     }
-                    totalCount = GetPostCountByCategoryId(categoryId.Value);
+
+                    totalCount = this.GetPostCountByCategoryId(categoryId.Value);
                 }
                 else
                 {
                     if (!string.IsNullOrEmpty(filterText))
                     {
-                        filteredPosts = GetPaginatedPosts(DEFAULT_PAGE_NUMBER, int.MaxValue);
+                        filteredPosts = this.GetPaginatedPosts(MINPAGENUMBER, int.MaxValue);
                     }
                     else
                     {
-                        filteredPosts = GetPaginatedPosts(currentPage, itemsPerPage);
+                        filteredPosts = this.GetPaginatedPosts(currentPage, itemsPerPage);
                     }
-                    totalCount = GetTotalPostCount();
+
+                    totalCount = this.GetTotalPostCount();
                 }
 
                 if (!string.IsNullOrEmpty(filterText))
@@ -464,7 +532,7 @@ namespace Duo.Services
                     var searchResults = new List<Post>();
                     foreach (var post in filteredPosts)
                     {
-                        if (_searchService.FindFuzzySearchMatches(filterText, new[] { post.Title }).Any())
+                        if (this.searchService.FindFuzzySearchMatches(filterText, new[] { post.Title }).Any())
                         {
                             searchResults.Add(post);
                         }
@@ -472,7 +540,7 @@ namespace Duo.Services
 
                     totalCount = searchResults.Count;
                     filteredPosts = searchResults
-                        .Skip((currentPage - DEFAULT_PAGE_NUMBER) * itemsPerPage)
+                        .Skip((currentPage - MINPAGENUMBER) * itemsPerPage)
                         .Take(itemsPerPage);
                 }
 
@@ -481,7 +549,7 @@ namespace Duo.Services
                 {
                     if (string.IsNullOrEmpty(post.Username))
                     {
-                        var postAuthor = _userService.GetUserById(post.UserID);
+                        var postAuthor = this.userService.GetUserById(post.UserID);
                         post.Username = postAuthor?.Username ?? "Unknown User";
                     }
 
@@ -491,7 +559,7 @@ namespace Duo.Services
                     post.Hashtags.Clear();
                     try
                     {
-                        var postHashtags = GetHashtagsByPostId(post.Id);
+                        var postHashtags = this.GetHashtagsByPostId(post.Id);
                         foreach (var hashtag in postHashtags)
                         {
                             post.Hashtags.Add(hashtag.Name);
@@ -513,9 +581,19 @@ namespace Duo.Services
             }
         }
 
+        /// <summary>
+        /// Toggles the selection state of a hashtag in a set of hashtags.
+        /// </summary>
+        /// <param name="currentHashtags">The current set of selected hashtags.</param>
+        /// <param name="hashtagToToggle">The hashtag to toggle.</param>
+        /// <param name="allHashtagsFilter">The filter value representing all hashtags.</param>
+        /// <returns>The updated set of hashtags after toggling.</returns>
         public HashSet<string> ToggleHashtagSelection(HashSet<string> currentHashtags, string hashtagToToggle, string allHashtagsFilter)
         {
-            if (string.IsNullOrEmpty(hashtagToToggle)) return currentHashtags;
+            if (string.IsNullOrEmpty(hashtagToToggle))
+            {
+                return currentHashtags;
+            }
 
             var updatedHashtags = new HashSet<string>(currentHashtags);
 
@@ -530,7 +608,7 @@ namespace Duo.Services
                 {
                     updatedHashtags.Remove(hashtagToToggle);
 
-                    if (updatedHashtags.Count == DEFAULT_COUNT)
+                    if (updatedHashtags.Count == DEFAULTCOUNT)
                     {
                         updatedHashtags.Add(allHashtagsFilter);
                     }

@@ -1,19 +1,27 @@
-using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+// <copyright file="MockDataTablesPost.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
 
 namespace Duo.Data
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Data;
+    using System.Linq;
+    using System.Text;
+    using System.Threading.Tasks;
+
+    /// <summary>
+    /// Provides mock data tables for testing post-related operations.
+    /// </summary>
     public class MockDataTablesPost
     {
-        public DataTable PostRepositoryDataTABLE;
-
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MockDataTablesPost"/> class.
+        /// </summary>
         public MockDataTablesPost()
         {
-            PostRepositoryDataTABLE = new DataTable
+            this.PostRepositoryDataTable = new DataTable
             {
                 Columns =
                 {
@@ -24,7 +32,7 @@ namespace Duo.Data
                     new DataColumn("CategoryID", typeof(int)),
                     new DataColumn("CreatedAt", typeof(DateTime)),
                     new DataColumn("UpdatedAt", typeof(DateTime)),
-                    new DataColumn("LikeCount", typeof(int))
+                    new DataColumn("LikeCount", typeof(int)),
                 },
                 Rows =
                 {
@@ -36,9 +44,13 @@ namespace Duo.Data
                     { 6, "Searchable Post", "This post has a searchable title", 3, 3, DateTime.Now, DateTime.Now, 0 },
                     { 7, "First Category Post", "This is a category 1 post", 4, 1, DateTime.Now, DateTime.Now, 0 },
                     { 8, "User Post", "This is user 1's post", 1, 4, DateTime.Now, DateTime.Now, 0 },
-                    { 9, "User Post 2", "This is another user 1's post", 1, 4, DateTime.Now, DateTime.Now, 0 }
-                }
+                    { 9, "User Post 2", "This is another user 1's post", 1, 4, DateTime.Now, DateTime.Now, 0 },
+                },
             };
         }
+        /// <summary>
+        /// Gets or sets the mock data table for post repository testing.
+        /// </summary>
+        public DataTable PostRepositoryDataTable { get; set; }
     }
 } 
