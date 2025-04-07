@@ -113,7 +113,7 @@ namespace Duo.ViewModels
         }
 
         public ICommand LoadPostDetailsCommand { get; private set; }
-        public ICommand AddCommentCommand { get; private set; }
+        public ICommand  AddCommentCommand { get; private set; }
         public ICommand AddReplyCommand { get; private set; }
         public ICommand BackCommand { get; private set; }
 
@@ -137,10 +137,6 @@ namespace Duo.ViewModels
 
             try
             {
-                if (postId <= INVALID_ID)
-                {
-                    throw new ArgumentException("Invalid post ID", nameof(postId));
-                }
 
                 if (Post == null)
                 {
@@ -153,17 +149,7 @@ namespace Duo.ViewModels
 
                 var requestedPost = _postService.GetPostById(postId);
                 if (requestedPost != null)
-                {
-                    if (requestedPost.Id <= INVALID_ID)
-                    {
-                        requestedPost.Id = postId;
-                    }
-
-                    if (requestedPost.Hashtags == null)
-                    {
-                        requestedPost.Hashtags = new List<string>();
-                    }
-
+                { 
                     try 
                     {
                         var postAuthor = _userService.GetUserById(requestedPost.UserID);

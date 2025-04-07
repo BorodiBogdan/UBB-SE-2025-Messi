@@ -95,7 +95,12 @@ namespace Duo.Services
 
             try
             {
-                return _postRepository.GetPostById(postId);
+                var requestedPost = _postRepository.GetPostById(postId);
+                if (requestedPost.Hashtags == null)
+                {
+                    requestedPost.Hashtags = new List<string>();
+                }
+                return requestedPost;
             }
             catch (Exception ex)
             {
