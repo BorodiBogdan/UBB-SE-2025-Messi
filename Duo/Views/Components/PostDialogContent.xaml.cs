@@ -108,6 +108,9 @@ namespace Duo.Views.Components
 
     public sealed partial class PostDialogContent : UserControl
     {
+        // Constants for validation and defaults
+        private const int MAX_HASHTAGS = 5;
+        
         // Validation TextBlocks
         private bool _isTitleValid = true;
         private bool _isContentValid = true;
@@ -358,10 +361,10 @@ namespace Duo.Views.Components
             }
                 
             // Check if maximum hashtag limit is reached
-            if (ViewModel.Hashtags.Count >= 5)
+            if (ViewModel.Hashtags.Count >= MAX_HASHTAGS)
             {
                 System.Diagnostics.Debug.WriteLine("PostDialogContent.AddHashtag - Max hashtags (5) reached");
-                ShowError(HashtagErrorTextBlock, "Maximum of 5 hashtags allowed per post.");
+                ShowError(HashtagErrorTextBlock, $"Maximum of {MAX_HASHTAGS} hashtags allowed per post.");
                 return;
             }
 

@@ -39,7 +39,7 @@
                             VerticalAlignment="Stretch">
                             <Border 
                                 Width="1" 
-                                MinHeight="100%"
+                                MinHeight="100"
                                 Margin="8,0,0,0"
                                 VerticalAlignment="Stretch" 
                                 HorizontalAlignment="Center"

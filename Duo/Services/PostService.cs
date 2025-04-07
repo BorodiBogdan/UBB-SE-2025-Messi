@@ -4,21 +4,29 @@ using System.Collections.ObjectModel;
 using Microsoft.Data.SqlClient;
 using Duo.Models;
 using Duo.Services;
+using Duo.Services.Interfaces;
 using Duo.Repositories;
+using Duo.Repositories.Interfaces;
 using System.Diagnostics;
 using System.Linq;
 
 namespace Duo.Services
 {
-    public class PostService
+    public class PostService : IPostService
     {
-        private readonly PostRepository _postRepository;
-        private readonly HashtagRepository _hashtagRepository;
-        private readonly UserService _userService;
-        private readonly SearchService _searchService;
+        private readonly IPostRepository _postRepository;
+        private readonly IHashtagRepository _hashtagRepository;
+        private readonly IUserService _userService;
+        private readonly ISearchService _searchService;
         private const double FUZZY_SEARCH_SCORE_DEFAULT_THRESHOLD = 0.6;
+        
+        // Constants for validation
+        private const int INVALID_ID = 0;
+        private const int MIN_PAGE_NUMBER = 1;
+        private const int MIN_PAGE_SIZE = 1;
+        private const int DEFAULT_COUNT = 0;
 
-        public PostService(PostRepository postRepository, HashtagRepository hashtagRepository, UserService userService, SearchService searchService)
+        public PostService(IPostRepository postRepository, IHashtagRepository hashtagRepository, IUserService userService, ISearchService searchService)
         {
             _postRepository = postRepository;
             _hashtagRepository = hashtagRepository;
@@ -26,16 +34,16 @@ namespace Duo.Services
             _searchService = searchService;
         }
 
-        public int CreatePost(Post post)
+        public int CreatePost(Post newPost)
         {
-            if (string.IsNullOrWhiteSpace(post.Title) || string.IsNullOrWhiteSpace(post.Description))
+            if (string.IsNullOrWhiteSpace(newPost.Title) || string.IsNullOrWhiteSpace(newPost.Description))
             {
                 throw new ArgumentException("Title and Description cannot be empty.");
             }
 
             try
             {
-                return _postRepository.CreatePost(post);
+                return _postRepository.CreatePost(newPost);
             }
             catch (Exception ex)
             {
@@ -43,68 +51,68 @@ namespace Duo.Services
             }
         }
 
-        public void DeletePost(int id)
+        public void DeletePost(int postId)
         {
-            if (id <= 0)
+            if (postId <= INVALID_ID)
             {
                 throw new ArgumentException("Invalid Post ID.");
             }
 
             try
             {
-                _postRepository.DeletePost(id);
+                _postRepository.DeletePost(postId);
             }
             catch (Exception ex)
             {
-                throw new Exception($"Error deleting post with ID {id}: {ex.Message}");
+                throw new Exception($"Error deleting post with ID {postId}: {ex.Message}");
             }
         }
 
-        public void UpdatePost(Post post)
+        public void UpdatePost(Post postToUpdate)
         {
-            if (post.Id <= 0)
+            if (postToUpdate.Id <= INVALID_ID)
             {
                 throw new ArgumentException("Invalid Post ID.");
             }
 
             try
             {
-                post.UpdatedAt = DateTime.UtcNow;
-                _postRepository.UpdatePost(post);
+                postToUpdate.UpdatedAt = DateTime.UtcNow;
+                _postRepository.UpdatePost(postToUpdate);
             }
             catch (Exception ex)
             {
-                throw new Exception($"Error updating post with ID {post.Id}: {ex.Message}");
+                throw new Exception($"Error updating post with ID {postToUpdate.Id}: {ex.Message}");
             }
         }
 
-        public Post? GetPostById(int id)
+        public Post? GetPostById(int postId)
         {
-            if (id <= 0)
+            if (postId <= INVALID_ID)
             {
                 throw new ArgumentException("Invalid Post ID.");
             }
 
             try
             {
-                return _postRepository.GetPostById(id);
+                return _postRepository.GetPostById(postId);
             }
             catch (Exception ex)
             {
-                throw new Exception($"Error retrieving post with ID {id}: {ex.Message}");
+                throw new Exception($"Error retrieving post with ID {postId}: {ex.Message}");
             }
         }
 
-        public Collection<Post> GetPostsByCategory(int categoryId, int page, int pageSize)
+        public Collection<Post> GetPostsByCategory(int categoryId, int pageNumber, int pageSize)
         {
-            if (categoryId <= 0 || page < 1 || pageSize < 1)
+            if (categoryId <= INVALID_ID || pageNumber < MIN_PAGE_NUMBER || pageSize < MIN_PAGE_SIZE)
             {
                 throw new ArgumentException("Invalid pagination parameters.");
             }
 
             try
             {
-                return _postRepository.GetPostsByCategoryId(categoryId, page, pageSize);
+                return _postRepository.GetPostsByCategoryId(categoryId, pageNumber, pageSize);
             }
             catch (Exception ex)
             {
@@ -112,16 +120,16 @@ namespace Duo.Services
             }
         }
 
-        public List<Post> GetPaginatedPosts(int page, int pageSize)
+        public List<Post> GetPaginatedPosts(int pageNumber, int pageSize)
         {
-            if (page < 1 || pageSize < 1)
+            if (pageNumber < MIN_PAGE_NUMBER || pageSize < MIN_PAGE_SIZE)
             {
                 throw new ArgumentException("Invalid pagination parameters.");
             }
 
             try
             {
-                return _postRepository.GetPaginatedPosts(page, pageSize);
+                return _postRepository.GetPaginatedPosts(pageNumber, pageSize);
             }
             catch (Exception ex)
             {
@@ -143,7 +151,7 @@ namespace Duo.Services
 
         public int GetPostCountByCategoryId(int categoryId)
         {
-            if (categoryId <= 0)
+            if (categoryId <= INVALID_ID)
             {
                 throw new ArgumentException("Invalid Category ID.");
             }
@@ -158,23 +166,22 @@ namespace Duo.Services
             }
         }
 
-        public int GetPostCountByHashtags(List<string> hashtags)
+        public int GetPostCountByHashtags(List<string> hashtagList)
         {
-
-            if (hashtags == null || hashtags.Count == 0)
+            if (hashtagList == null || hashtagList.Count == DEFAULT_COUNT)
             {
                 return GetTotalPostCount();
             }
 
-            hashtags = hashtags.Where(h => !string.IsNullOrWhiteSpace(h)).ToList();
-            if (hashtags.Count == 0)
+            List<string> filteredHashtags = hashtagList.Where(h => !string.IsNullOrWhiteSpace(h)).ToList();
+            if (filteredHashtags.Count == DEFAULT_COUNT)
             {
                 return GetTotalPostCount();
             }
 
             try
             {
-                return _postRepository.GetPostCountByHashtags(hashtags);
+                return _postRepository.GetPostCountByHashtags(filteredHashtags);
             }
             catch (Exception ex)
             {
@@ -196,7 +203,7 @@ namespace Duo.Services
 
         public List<Hashtag> GetHashtagsByCategory(int categoryId)
         {
-            if (categoryId <= 0)
+            if (categoryId <= INVALID_ID)
             {
                 throw new ArgumentException("Invalid Category ID.");
             }
@@ -211,27 +218,27 @@ namespace Duo.Services
             }
         }
 
-        public List<Post> GetPostsByHashtags(List<string> hashtags, int page, int pageSize)
+        public List<Post> GetPostsByHashtags(List<string> hashtagList, int pageNumber, int pageSize)
         {
-            if (page < 1 || pageSize < 1)
+            if (pageNumber < MIN_PAGE_NUMBER || pageSize < MIN_PAGE_SIZE)
             {
                 throw new ArgumentException("Invalid pagination parameters.");
             }
 
-            if (hashtags == null || hashtags.Count == 0)
+            if (hashtagList == null || hashtagList.Count == DEFAULT_COUNT)
             {
-                return GetPaginatedPosts(page, pageSize);
+                return GetPaginatedPosts(pageNumber, pageSize);
             }
 
-            hashtags = hashtags.Where(h => !string.IsNullOrWhiteSpace(h)).ToList();
-            if (hashtags.Count == 0)
+            List<string> filteredHashtags = hashtagList.Where(h => !string.IsNullOrWhiteSpace(h)).ToList();
+            if (filteredHashtags.Count == DEFAULT_COUNT)
             {
-                return GetPaginatedPosts(page, pageSize);
+                return GetPaginatedPosts(pageNumber, pageSize);
             }
 
             try
             {
-                return _postRepository.GetPostsByHashtags(hashtags, page, pageSize);
+                return _postRepository.GetPostsByHashtags(filteredHashtags, pageNumber, pageSize);
             }
             catch (Exception ex)
             {
@@ -239,15 +246,15 @@ namespace Duo.Services
             }
         }
 
-        public bool ValidatePostOwnership(int currentUserId, int currentPostId)
+        public bool ValidatePostOwnership(int authorUserId, int targetPostId)
         {
-            int? postUserId = _postRepository.GetUserIdByPostId(currentPostId);
-            return currentUserId == postUserId;
+            int? postOwnerId = _postRepository.GetUserIdByPostId(targetPostId);
+            return authorUserId == postOwnerId;
         }
 
         public List<Hashtag> GetHashtagsByPostId(int postId)
         {
-            if (postId <= 0) throw new ArgumentException("Invalid Post ID.");
+            if (postId <= INVALID_ID) throw new ArgumentException("Invalid Post ID.");
 
             try
             {
@@ -261,16 +268,16 @@ namespace Duo.Services
 
         public bool LikePost(int postId)
         {
-            if (postId <= 0) throw new ArgumentException("Invalid Post ID.");
+            if (postId <= INVALID_ID) throw new ArgumentException("Invalid Post ID.");
 
             try
             {
-                var post = _postRepository.GetPostById(postId);
-                if (post == null) throw new Exception("Post not found");
+                var targetPost = _postRepository.GetPostById(postId);
+                if (targetPost == null) throw new Exception("Post not found");
 
-                post.LikeCount++;
+                targetPost.LikeCount++;
 
-                _postRepository.UpdatePost(post);
+                _postRepository.UpdatePost(targetPost);
                 return true;
             }
             catch (Exception ex)
@@ -279,27 +286,27 @@ namespace Duo.Services
             }
         }
 
-        public bool AddHashtagToPost(int postId, string tagName, int userId)
+        public bool AddHashtagToPost(int postId, string hashtagName, int userId)
         {
-            if (postId <= 0)
+            if (postId <= INVALID_ID)
             {
                 throw new ArgumentException("Invalid Post ID.");
             }
             
-            if (string.IsNullOrWhiteSpace(tagName))
+            if (string.IsNullOrWhiteSpace(hashtagName))
             {
                 throw new ArgumentException("Tag name cannot be empty.");
             }
             
-            if (userId <= 0)
+            if (userId <= INVALID_ID)
             {
                 throw new ArgumentException("Invalid User ID.");
             }
 
             try
             {
-                var post = _postRepository.GetPostById(postId);
-                if (post == null)
+                var targetPost = _postRepository.GetPostById(postId);
+                if (targetPost == null)
                 {
                     throw new Exception($"Post with ID {postId} not found");
                 }
@@ -309,13 +316,13 @@ namespace Duo.Services
                     throw new Exception("User does not have permission to add hashtags to this post.");
                 }
 
-                Hashtag? hashtag = null;
-                hashtag = _hashtagRepository.GetHashtagByText(tagName);
+                Hashtag? existingHashtag = null;
+                existingHashtag = _hashtagRepository.GetHashtagByText(hashtagName);
 
-                hashtag = _hashtagRepository.CreateHashtag(tagName);
+                Hashtag hashtag = _hashtagRepository.CreateHashtag(hashtagName);
 
-                bool result = _hashtagRepository.AddHashtagToPost(postId, hashtag.Id);
-                return result;
+                bool addResult = _hashtagRepository.AddHashtagToPost(postId, hashtag.Id);
+                return addResult;
             }
             catch (Exception ex)
             {
@@ -325,9 +332,9 @@ namespace Duo.Services
 
         public bool RemoveHashtagFromPost(int postId, int hashtagId, int userId)
         {
-            if (postId <= 0) throw new ArgumentException("Invalid Post ID.");
-            if (hashtagId <= 0) throw new ArgumentException("Invalid Hashtag ID.");
-            if (userId <= 0) throw new ArgumentException("Invalid User ID.");
+            if (postId <= INVALID_ID) throw new ArgumentException("Invalid Post ID.");
+            if (hashtagId <= INVALID_ID) throw new ArgumentException("Invalid Hashtag ID.");
+            if (userId <= INVALID_ID) throw new ArgumentException("Invalid User ID.");
 
             try
             {
@@ -343,56 +350,53 @@ namespace Duo.Services
         }
 
 
-        public int CreatePostWithHashtags(Post post, List<string> hashtags, int userId)
+        public int CreatePostWithHashtags(Post newPost, List<string> hashtagList, int authorId)
         {
-            if (string.IsNullOrWhiteSpace(post.Title) || string.IsNullOrWhiteSpace(post.Description))
+            if (string.IsNullOrWhiteSpace(newPost.Title) || string.IsNullOrWhiteSpace(newPost.Description))
             {
                 throw new ArgumentException("Title and Description cannot be empty.");
             }
 
             try
             {
-                int postId = _postRepository.CreatePost(post);
+                int createdPostId = _postRepository.CreatePost(newPost);
                 
-                if (postId <= 0)
+                if (createdPostId <= INVALID_ID)
                 {
                     throw new Exception("Failed to create post: Invalid post ID returned from database");
                 }
                 
                 try
                 {
-                    var createdPost = _postRepository.GetPostById(postId);
+                    var createdPost = _postRepository.GetPostById(createdPostId);
                 }
                 catch (Exception ex)
                 {
-
                 }
                 
-                if (hashtags != null && hashtags.Count > 0)
+                if (hashtagList != null && hashtagList.Count > DEFAULT_COUNT)
                 {    
-                    foreach (var tagName in hashtags)
+                    foreach (var hashtagName in hashtagList)
                     {
                         try
                         {
-                            Hashtag? hashtag = _hashtagRepository.GetHashtagByText(tagName);
-                            hashtag = _hashtagRepository.CreateHashtag(tagName);
+                            Hashtag? existingHashtag = _hashtagRepository.GetHashtagByText(hashtagName);
+                            Hashtag hashtag = _hashtagRepository.CreateHashtag(hashtagName);
                             
-                            bool success = _hashtagRepository.AddHashtagToPost(postId, hashtag.Id);
+                            bool addSuccess = _hashtagRepository.AddHashtagToPost(createdPostId, hashtag.Id);
                         }
                         catch (Exception ex)
                         {
-                        
                         }
                     }
                 }
                 
-                return postId;
+                return createdPostId;
             }
             catch (Exception ex)
             {
                 if (ex.InnerException != null)
                 {
-                
                 }
                 throw new Exception($"Error creating post with hashtags: {ex.Message}", ex);
             }

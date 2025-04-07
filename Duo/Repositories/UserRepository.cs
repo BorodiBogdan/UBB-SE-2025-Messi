@@ -5,16 +5,18 @@ using System.Collections.ObjectModel;
 using System;
 using Duo.Models;
 using Duo.Data;
+using Duo.Repositories.Interfaces;
 
 namespace Duo.Repositories
 {
-    public class UserRepository
+    public class UserRepository : IUserRepository
     {
-        private readonly DataLink dataLink;
-        public UserRepository(DataLink dataLink)
+        private readonly IDatabaseConnection dataLink;
+        public UserRepository(IDatabaseConnection dataLink)
         {
-            this.dataLink = dataLink;
+            this.dataLink = dataLink ?? throw new ArgumentNullException(nameof(dataLink));
         }
+        
         public int CreateUser(User user)
         {
             if (user == null)
@@ -36,15 +38,9 @@ namespace Duo.Repositories
             {
                 new SqlParameter("@Username", user.Username),
             };
-            try
-            {
-                int? result = dataLink.ExecuteScalar<int>("CreateUser", parameters);
-                return result ?? 0;
-            }
-            catch (SqlException ex)
-            {
-                throw new Exception($"Database error: {ex.Message}");
-            }
+            
+            int? result = dataLink.ExecuteScalar<int>("CreateUser", parameters);
+            return result ?? 0;
         }
 
         public User GetUserById(int id)
@@ -72,10 +68,6 @@ namespace Duo.Repositories
                     Convert.ToInt32(row[0]),
                     row[1]?.ToString() ?? string.Empty
                 );
-            }
-            catch (SqlException ex)
-            {
-                throw new Exception($"Database error: {ex.Message}");
             }
             finally
             {
@@ -108,10 +100,6 @@ namespace Duo.Repositories
                     Convert.ToInt32(row["userID"]),
                     row["username"]?.ToString() ?? string.Empty
                 );
-            }
-            catch (SqlException ex)
-            {
-                throw new Exception($"Database error: {ex.Message}");
             }
             finally
             {
