@@ -321,5 +321,382 @@ namespace TestProject1.Services
             var exception = Assert.Throws<Exception>(() => _commentService.LikeComment(commentId));
             Assert.Contains("Error liking comment", exception.Message);
         }
+
+        #region GetProcessedCommentsByPostId Tests
+
+        [Fact]
+        public void GetProcessedCommentsByPostId_WithValidPostId_ReturnsProcessedComments()
+        {
+            // Arrange
+            int postId = 1;
+            var comments = new List<Comment>
+            {
+                new Comment(1, "Top level comment 1", 1, postId, null, DateTime.Now, 0, 1),
+                new Comment(2, "Top level comment 2", 2, postId, null, DateTime.Now, 0, 1),
+                new Comment(3, "Reply to comment 1", 1, postId, 1, DateTime.Now, 0, 1), // Level will be updated
+                new Comment(4, "Reply to reply", 2, postId, 3, DateTime.Now, 0, 1) // Level will be updated
+            };
+
+            _mockCommentRepository.Setup(r => r.GetCommentsByPostId(postId)).Returns(comments);
+            _mockUserService.Setup(s => s.GetUserById(It.IsAny<int>())).Returns(new User(1, "TestUser"));
+
+            // Act
+            var (allComments, topLevelComments, repliesByParentId) = _commentService.GetProcessedCommentsByPostId(postId);
+
+            // Assert
+            Assert.Equal(4, allComments.Count);
+            Assert.Equal(2, topLevelComments.Count);
+            Assert.Equal(2, repliesByParentId.Count);
+            
+            // Verify that top-level comments have level 1
+            foreach (var comment in topLevelComments)
+            {
+                Assert.Equal(1, comment.Level);
+            }
+            
+            // Verify that replies have correct levels
+            Assert.Equal(2, repliesByParentId[1][0].Level); // Reply to comment 1 has level 2
+            Assert.Equal(3, repliesByParentId[3][0].Level); // Reply to reply has level 3
+        }
+
+        [Fact]
+        public void GetProcessedCommentsByPostId_WithNoComments_ReturnsEmptyCollections()
+        {
+            // Arrange
+            int postId = 1;
+            var emptyComments = new List<Comment>();
+
+            _mockCommentRepository.Setup(r => r.GetCommentsByPostId(postId)).Returns(emptyComments);
+
+            // Act
+            var (allComments, topLevelComments, repliesByParentId) = _commentService.GetProcessedCommentsByPostId(postId);
+
+            // Assert
+            Assert.Empty(allComments);
+            Assert.Empty(topLevelComments);
+            Assert.Empty(repliesByParentId);
+        }
+
+        [Fact]
+        public void GetProcessedCommentsByPostId_WithNullComments_ReturnsEmptyCollections()
+        {
+            // Arrange
+            int postId = 1;
+            
+            _mockCommentRepository.Setup(r => r.GetCommentsByPostId(postId)).Returns((List<Comment>)null);
+
+            // Act
+            var (allComments, topLevelComments, repliesByParentId) = _commentService.GetProcessedCommentsByPostId(postId);
+
+            // Assert
+            Assert.Empty(allComments);
+            Assert.Empty(topLevelComments);
+            Assert.Empty(repliesByParentId);
+        }
+
+        #endregion
+
+        #region FindCommentInHierarchy Tests
+
+        // Define a simple class for testing the generic FindCommentInHierarchy method
+        private class TestComment
+        {
+            public int Id { get; set; }
+            public List<TestComment> Replies { get; set; } = new List<TestComment>();
+        }
+
+        [Fact]
+        public void FindCommentInHierarchy_WhenCommentExistsInTopLevel_ReturnsComment()
+        {
+            // Arrange
+            int targetId = 2;
+            var comments = new List<TestComment>
+            {
+                new TestComment { Id = 1 },
+                new TestComment { Id = 2 },
+                new TestComment { Id = 3 }
+            };
+
+            // Act
+            var result = _commentService.FindCommentInHierarchy<TestComment>(
+                targetId,
+                comments,
+                c => c.Replies,
+                c => c.Id);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(targetId, result.Id);
+        }
+
+        [Fact]
+        public void FindCommentInHierarchy_WhenCommentExistsInReplies_ReturnsComment()
+        {
+            // Arrange
+            int targetId = 4;
+            var comments = new List<TestComment>
+            {
+                new TestComment 
+                { 
+                    Id = 1,
+                    Replies = new List<TestComment>
+                    {
+                        new TestComment { Id = 4 }
+                    }
+                },
+                new TestComment { Id = 2 }
+            };
+
+            // Act
+            var result = _commentService.FindCommentInHierarchy<TestComment>(
+                targetId,
+                comments,
+                c => c.Replies,
+                c => c.Id);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(targetId, result.Id);
+        }
+
+        [Fact]
+        public void FindCommentInHierarchy_WhenCommentExistsInNestedReplies_ReturnsComment()
+        {
+            // Arrange
+            int targetId = 5;
+            var comments = new List<TestComment>
+            {
+                new TestComment 
+                { 
+                    Id = 1,
+                    Replies = new List<TestComment>
+                    {
+                        new TestComment 
+                        { 
+                            Id = 3,
+                            Replies = new List<TestComment>
+                            {
+                                new TestComment { Id = 5 }
+                            }
+                        }
+                    }
+                },
+                new TestComment { Id = 2 }
+            };
+
+            // Act
+            var result = _commentService.FindCommentInHierarchy<TestComment>(
+                targetId,
+                comments,
+                c => c.Replies,
+                c => c.Id);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(targetId, result.Id);
+        }
+
+        [Fact]
+        public void FindCommentInHierarchy_WhenCommentDoesNotExist_ReturnsNull()
+        {
+            // Arrange
+            int targetId = 99; // Non-existent ID
+            var comments = new List<TestComment>
+            {
+                new TestComment { Id = 1 },
+                new TestComment 
+                { 
+                    Id = 2,
+                    Replies = new List<TestComment>
+                    {
+                        new TestComment { Id = 3 }
+                    }
+                }
+            };
+
+            // Act
+            var result = _commentService.FindCommentInHierarchy<TestComment>(
+                targetId,
+                comments,
+                c => c.Replies,
+                c => c.Id);
+
+            // Assert
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public void FindCommentInHierarchy_WithNullTopLevelComments_ReturnsNull()
+        {
+            // Arrange
+            int targetId = 1;
+
+            // Act
+            var result = _commentService.FindCommentInHierarchy<TestComment>(
+                targetId,
+                null,
+                c => c.Replies,
+                c => c.Id);
+
+            // Assert
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public void FindCommentInHierarchy_WithNullReplies_HandlesGracefully()
+        {
+            // Arrange
+            int targetId = 3;
+            var comments = new List<TestComment>
+            {
+                new TestComment { Id = 1, Replies = null },
+                new TestComment { Id = 2 }
+            };
+
+            // Act
+            var result = _commentService.FindCommentInHierarchy<TestComment>(
+                targetId,
+                comments,
+                c => c.Replies,
+                c => c.Id);
+
+            // Assert
+            Assert.Null(result); // Should return null without throwing an exception
+        }
+
+        #endregion
+
+        #region CreateReplyWithDuplicateCheck Tests
+
+        [Fact]
+        public void CreateReplyWithDuplicateCheck_WithValidDataAndNoDuplicates_CreatesReply()
+        {
+            // Arrange
+            string replyText = "Test reply";
+            int postId = 1;
+            int parentCommentId = 2;
+            var existingComments = new List<Comment>();
+            
+            // Setup for CreateComment call
+            var user = new User(1, "TestUser");
+            var post = new Post { Id = postId };
+            var parentComment = new Comment(parentCommentId, "Parent", 1, postId, null, DateTime.Now, 0, 1);
+
+            _mockUserService.Setup(s => s.GetCurrentUser()).Returns(user);
+            _mockPostRepository.Setup(r => r.GetPostById(postId)).Returns(post);
+            _mockCommentRepository.Setup(r => r.GetCommentsCountForPost(postId)).Returns(0);
+            _mockCommentRepository.Setup(r => r.GetCommentById(parentCommentId)).Returns(parentComment);
+            _mockCommentRepository.Setup(r => r.CreateComment(It.IsAny<Comment>())).Returns(3); // New comment ID
+
+            // Act
+            var (success, replySignature) = _commentService.CreateReplyWithDuplicateCheck(
+                replyText, postId, parentCommentId, existingComments);
+
+            // Assert
+            Assert.True(success);
+            Assert.Equal($"{parentCommentId}_{replyText}", replySignature);
+            _mockCommentRepository.Verify(r => r.CreateComment(It.Is<Comment>(c => 
+                c.Content == replyText && 
+                c.PostId == postId && 
+                c.ParentCommentId == parentCommentId)), Times.Once);
+        }
+
+        [Fact]
+        public void CreateReplyWithDuplicateCheck_WithDuplicateInExistingComments_ReturnsFalse()
+        {
+            // Arrange
+            string replyText = "Test reply";
+            int postId = 1;
+            int parentCommentId = 2;
+            
+            // Create list with a duplicate comment
+            var existingComments = new List<Comment>
+            {
+                new Comment(3, replyText, 1, postId, parentCommentId, DateTime.Now, 0, 1)
+            };
+
+            // Act
+            var (success, replySignature) = _commentService.CreateReplyWithDuplicateCheck(
+                replyText, postId, parentCommentId, existingComments);
+
+            // Assert
+            Assert.False(success);
+            Assert.Equal($"{parentCommentId}_{replyText}", replySignature);
+            _mockCommentRepository.Verify(r => r.CreateComment(It.IsAny<Comment>()), Times.Never);
+        }
+
+        [Fact]
+        public void CreateReplyWithDuplicateCheck_WithDuplicateLastProcessedReply_ReturnsFalse()
+        {
+            // Arrange
+            string replyText = "Test reply";
+            int postId = 1;
+            int parentCommentId = 2;
+            var existingComments = new List<Comment>();
+            string lastProcessedReplySignature = $"{parentCommentId}_{replyText}";
+
+            // Act
+            var (success, replySignature) = _commentService.CreateReplyWithDuplicateCheck(
+                replyText, postId, parentCommentId, existingComments, lastProcessedReplySignature);
+
+            // Assert
+            Assert.False(success);
+            Assert.Equal(lastProcessedReplySignature, replySignature);
+            _mockCommentRepository.Verify(r => r.CreateComment(It.IsAny<Comment>()), Times.Never);
+        }
+
+        [Fact]
+        public void CreateReplyWithDuplicateCheck_WithCaseInsensitiveDuplicate_ReturnsFalse()
+        {
+            // Arrange
+            string replyText = "Test reply";
+            int postId = 1;
+            int parentCommentId = 2;
+            
+            // Create list with a case-insensitive duplicate
+            var existingComments = new List<Comment>
+            {
+                new Comment(3, "TEST REPLY", 1, postId, parentCommentId, DateTime.Now, 0, 1)
+            };
+
+            // Act
+            var (success, replySignature) = _commentService.CreateReplyWithDuplicateCheck(
+                replyText, postId, parentCommentId, existingComments);
+
+            // Assert
+            Assert.False(success);
+            Assert.Equal($"{parentCommentId}_{replyText}", replySignature);
+            _mockCommentRepository.Verify(r => r.CreateComment(It.IsAny<Comment>()), Times.Never);
+        }
+
+        [Fact]
+        public void CreateReplyWithDuplicateCheck_WithNullExistingComments_HandlesGracefully()
+        {
+            // Arrange
+            string replyText = "Test reply";
+            int postId = 1;
+            int parentCommentId = 2;
+            
+            // Setup for CreateComment call
+            var user = new User(1, "TestUser");
+            var post = new Post { Id = postId };
+            var parentComment = new Comment(parentCommentId, "Parent", 1, postId, null, DateTime.Now, 0, 1);
+
+            _mockUserService.Setup(s => s.GetCurrentUser()).Returns(user);
+            _mockPostRepository.Setup(r => r.GetPostById(postId)).Returns(post);
+            _mockCommentRepository.Setup(r => r.GetCommentsCountForPost(postId)).Returns(0);
+            _mockCommentRepository.Setup(r => r.GetCommentById(parentCommentId)).Returns(parentComment);
+            _mockCommentRepository.Setup(r => r.CreateComment(It.IsAny<Comment>())).Returns(3);
+
+            // Act
+            var (success, replySignature) = _commentService.CreateReplyWithDuplicateCheck(
+                replyText, postId, parentCommentId, null);
+
+            // Assert
+            Assert.True(success);
+            _mockCommentRepository.Verify(r => r.CreateComment(It.IsAny<Comment>()), Times.Once);
+        }
+
+        #endregion
     }
 } 

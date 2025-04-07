@@ -31,8 +31,6 @@ namespace Duo.ViewModels
         private object _commentsPanel;
         private string _lastProcessedReply;
 
-        public static Dictionary<int, bool> CollapsedComments { get; } = new Dictionary<int, bool>();
-
         public event EventHandler CommentsLoaded;
 
         public object CommentsPanel
@@ -145,68 +143,13 @@ namespace Duo.ViewModels
                     };
                 }
 
-                var post = _postService.GetPostById(postId);
+                // Use the service method that encapsulates all the business logic
+                var post = _postService.GetPostDetailsWithMetadata(postId);
+                
                 if (post != null)
                 {
-                    if (post.Id <= 0)
-                    {
-                        post.Id = postId;
-                    }
-
-                    if (post.Hashtags == null)
-                    {
-                        post.Hashtags = new List<string>();
-                    }
-
-                    try 
-                    {
-                        var user = _userService.GetUserById(post.UserID);
-                        post.Username = $"{user?.Username ?? "Unknown User"}";
-                    }
-                    catch (Exception userEx)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"Error getting user: {userEx.Message}");
-                        post.Username = "Unknown User";
-                    }
-
-                    try
-                    {
-                        if (string.IsNullOrEmpty(post.Date) && post.CreatedAt != default)
-                        {
-                            DateTime localCreatedAt = Helpers.DateTimeHelper.ConvertUtcToLocal(post.CreatedAt);
-                            post.Date = FormatDate(localCreatedAt);
-                        }
-                    }
-                    catch (Exception dateEx)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"Error formatting date: {dateEx.Message}");
-                        post.Date = "Unknown date";
-                    }
-
-                    try 
-                    {
-                        var hashtags = _postService.GetHashtagsByPostId(post.Id);
-                        if (hashtags != null && hashtags.Any())
-                        {
-                            post.Hashtags = hashtags.Select(h => h.Name ?? h.Tag).ToList();
-                        }
-                    }
-                    catch (Exception hashtagEx)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"Error loading hashtags: {hashtagEx.Message}");
-                        post.Hashtags = new List<string>();
-                    }
-
-                    try
-                    {
-                        Post = post;
-                        LoadComments(post.Id);
-                    }
-                    catch (Exception uiEx)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"Error updating UI: {uiEx.Message}");
-                        ErrorMessage = "Error displaying post details";
-                    }
+                    Post = post;
+                    LoadComments(post.Id);
                 }
                 else
                 {
@@ -233,52 +176,27 @@ namespace Duo.ViewModels
                     throw new ArgumentException("Invalid post ID", nameof(postId));
                 }
 
-                var comments = _commentService.GetCommentsByPostId(postId);
+                // Use service method to get pre-processed comments
+                var (allComments, topLevelComments, repliesByParentId) = _commentService.GetProcessedCommentsByPostId(postId);
 
                 Comments.Clear();
                 CommentViewModels.Clear();
 
-                if (comments != null && comments.Any())
+                if (allComments != null && allComments.Any())
                 {
                     HasComments = true;
 
-                    foreach (var comment in comments)
+                    // Add all comments to the Comments collection
+                    foreach (var comment in allComments)
                     {
                         Comments.Add(comment);
                     }
 
-                    var topLevelComments = comments.Where(c => c.ParentCommentId == null).ToList();
-                    
-                    var repliesByParentId = comments
-                                        .Where(c => c.ParentCommentId.HasValue)
-                                        .GroupBy(c => c.ParentCommentId.Value)
-                                        .ToDictionary(g => g.Key, g => g.ToList());
-
-                    foreach (var comment in topLevelComments)
-                    {
-                        comment.Level = 1;
-                    }
-
-                    foreach (var parentId in repliesByParentId.Keys)
-                    {
-                        var parentComment = comments.FirstOrDefault(c => c.Id == parentId);
-                        if (parentComment != null)
-                        {
-                            foreach (var reply in repliesByParentId[parentId])
-                            {
-                                reply.Level = parentComment.Level + 1;
-                            }
-                        }
-                    }
-
+                    // Create view models for top-level comments only
                     foreach (var comment in topLevelComments)
                     {
                         var commentViewModel = new CommentViewModel(comment, repliesByParentId);
-                        
-                        if (CollapsedComments.TryGetValue(comment.Id, out bool isCollapsed))
-                        {
-                            commentViewModel.IsExpanded = !isCollapsed;
-                        }
+                       
                         
                         CommentViewModels.Add(commentViewModel);
                     }
@@ -300,9 +218,6 @@ namespace Duo.ViewModels
 
         private void AddComment(string commentText)
         {
-            if (string.IsNullOrWhiteSpace(commentText) || Post == null || Post.Id <= 0)
-                return;
-
             try
             {
                 _commentService.CreateComment(commentText, Post.Id, null);
@@ -333,11 +248,6 @@ namespace Duo.ViewModels
                 bool success = _commentService.DeleteComment(commentId, currentUser.UserId);
                 if (success)
                 {
-                    if (CollapsedComments.ContainsKey(commentId))
-                    {
-                        CollapsedComments.Remove(commentId);
-                    }
-
                     LoadComments(Post.Id);
                 }                
              }
@@ -349,39 +259,16 @@ namespace Duo.ViewModels
 
         public void AddReplyToComment(int parentCommentId, string replyText)
         {
-            if (string.IsNullOrWhiteSpace(replyText) || Post == null || Post.Id <= 0 || parentCommentId <= 0)
-                return;
-
             try
             {
-                string replySignature = $"{parentCommentId}_{replyText}";
-
-                // Check for duplicate comments
-                bool isDuplicate = false;
-                foreach (var comment in Comments)
-                {
-                    if (comment.ParentCommentId == parentCommentId && 
-                        comment.Content.Equals(replyText, StringComparison.OrdinalIgnoreCase))
-                    {
-                        isDuplicate = true;
-                        break;
-                    }
-                }
-
-                if (_lastProcessedReply == replySignature)
-                {
-                    isDuplicate = true;
-                }
-
-                if (isDuplicate)
-                {
-                    return;
-                }
-
-                _lastProcessedReply = replySignature;
-
-                _commentService.CreateComment(replyText, Post.Id, parentCommentId);
-                LoadComments(Post.Id);
+                var (success, newReplySignature) = _commentService.CreateReplyWithDuplicateCheck(
+                    replyText,
+                    Post?.Id ?? 0,
+                    parentCommentId,
+                    Comments,
+                    _lastProcessedReply);
+                    _lastProcessedReply = newReplySignature;
+                    LoadComments(Post.Id);
             }
             catch (Exception ex)
             {
@@ -390,32 +277,13 @@ namespace Duo.ViewModels
             }
         }
 
-        private string FormatDate(DateTime date)
-        {
-            // This method assumes date is already in local time
-            return date.ToString("MMM dd, yyyy HH:mm");
-        }
-
         public CommentViewModel FindCommentById(int commentId)
         {
-            // First, check top-level comments
-            var comment = CommentViewModels.FirstOrDefault(c => c.Id == commentId);
-            if (comment != null)
-            {
-                return comment;
-            }
-            
-            // If not found in top-level, recursively search through replies
-            foreach (var topLevelComment in CommentViewModels)
-            {
-                var foundInReplies = FindCommentInReplies(topLevelComment.Replies, commentId);
-                if (foundInReplies != null)
-                {
-                    return foundInReplies;
-                }
-            }
-            
-            return null;
+            return _commentService.FindCommentInHierarchy<CommentViewModel>(
+                commentId,
+                CommentViewModels,
+                c => c.Replies,
+                c => c.Id);
         }
 
         public void LikeCommentById(int commentId)
@@ -439,21 +307,6 @@ namespace Duo.ViewModels
             {
                 ErrorMessage = $"Failed to like comment: {ex.Message}";
             }
-        }
-
-        private CommentViewModel FindCommentInReplies(IEnumerable<CommentViewModel> replies, int commentId)
-        {
-            foreach (var reply in replies)
-            {
-                if (reply.Id == commentId)
-                    return reply;
-                    
-                var foundInNestedReplies = FindCommentInReplies(reply.Replies, commentId);
-                if (foundInNestedReplies != null)
-                    return foundInNestedReplies;
-            }
-            
-            return null;
         }
     }
 } 

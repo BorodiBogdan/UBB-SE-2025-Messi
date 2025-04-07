@@ -23,6 +23,7 @@ namespace Duo.Services.Interfaces
         bool ValidatePostOwnership(int authorUserId, int targetPostId);
         List<Hashtag> GetHashtagsByPostId(int postId);
         bool LikePost(int postId);
+        Post? GetPostDetailsWithMetadata(int postId);
         bool AddHashtagToPost(int postId, string hashtagName, int userId);
         bool RemoveHashtagFromPost(int postId, int hashtagId, int userId);
         int CreatePostWithHashtags(Post newPost, List<string> hashtagList, int authorId);
