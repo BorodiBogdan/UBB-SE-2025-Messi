@@ -324,25 +324,21 @@ namespace Duo.ViewModels
 
         public void DeleteComment(int commentId)
          {
-             if (commentId <= 0 || Post == null || Post.Id <= 0)
-                 return;
 
              try
              {
-                 User currentUser = userService.GetCurrentUser();
-                 if (currentUser != null)
-                 {
-                     bool success = _commentService.DeleteComment(commentId, currentUser.UserId);
-                     if (success)
-                     {
-                         if (CollapsedComments.ContainsKey(commentId))
-                         {
-                             CollapsedComments.Remove(commentId);
-                         }
+                User currentUser = userService.GetCurrentUser();
 
-                         LoadComments(Post.Id);
-                     }
-                 }
+                bool success = _commentService.DeleteComment(commentId, currentUser.UserId);
+                if (success)
+                {
+                    if (CollapsedComments.ContainsKey(commentId))
+                    {
+                        CollapsedComments.Remove(commentId);
+                    }
+
+                    LoadComments(Post.Id);
+                }                
              }
              catch (Exception ex)
              {

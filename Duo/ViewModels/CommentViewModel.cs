@@ -188,7 +188,7 @@ namespace Duo.ViewModels
 
         private void OnLikeComment()
         {
-            CommentLiked?.Invoke(this, Id);
+            _comment.IncrementLikeCount();
         }
 
         private void DeleteComment()
