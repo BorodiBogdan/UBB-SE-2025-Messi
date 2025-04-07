@@ -163,5 +163,32 @@ namespace Duo.Helpers
                 FormatAsDateTime(localDateTime) : 
                 Format(localDateTime, format);
         }
+        public static string FormatDate(DateTime date)
+        {
+            // Try to get local time
+            try
+            {
+                if (date.Date == DateTime.Today)
+                {
+                    return "Today";
+                }
+                else if (date.Date == DateTime.Today.AddDays(-1))
+                {
+                    return "Yesterday";
+                }
+                else if ((DateTime.Today - date.Date).TotalDays < 7)
+                {
+                    return date.ToString("ddd"); // Day of week
+                }
+
+                DateTime localDate = Duo.Helpers.DateTimeHelper.ConvertUtcToLocal(date);
+                return date.ToString("MMM d"); // Month + day
+            }
+            catch
+            {
+                // Fallback to simple format if helper methods fail
+                return date.ToString("MMM dd, yyyy HH:mm");
+            }
+        }
     }
 }
