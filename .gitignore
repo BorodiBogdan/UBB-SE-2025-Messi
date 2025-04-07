@@ -374,5 +374,5 @@ coverage_html
 coverage_report
 coverage_summary
 test_result
-Duo.csproj  
-TestMessi.csproj
+/Duo/Duo.csproj  
+/TestProject1/TestMessi.csproj
