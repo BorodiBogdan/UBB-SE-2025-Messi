@@ -3,8 +3,11 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows.Input;
 using Duo.Commands;
-using Duo.Models;
+using Duo.Helpers;
 using Duo.ViewModels.Base;
+using Duo.Services;
+using Microsoft.UI.Xaml;
+using static Duo.App;
 
 namespace Duo.ViewModels
 {
@@ -16,6 +19,11 @@ namespace Duo.ViewModels
         private string _replyText;
         private bool _isReplyVisible;
         private int _likeCount;
+        private bool _isDeleteButtonVisible;
+        private bool _isReplyButtonVisible;
+        private bool _isToggleButtonVisible;
+        private string _toggleIconGlyph = "\uE109"; // Plus icon by default
+        private const int MAX_NESTING_LEVEL = 3;
 
         public CommentViewModel(Models.Comment comment, Dictionary<int, List<Models.Comment>> repliesByParentId)
         {
@@ -31,12 +39,16 @@ namespace Duo.ViewModels
                     _replies.Add(new CommentViewModel(reply, repliesByParentId));
                 }
             }
+
+            // Initialize visibility states
+            UpdateVisibilityStates();
             
             ToggleRepliesCommand = new RelayCommand(ToggleReplies);
             ShowReplyFormCommand = new RelayCommand(ShowReplyForm);
             CancelReplyCommand = new RelayCommand(CancelReply);
             SubmitReplyCommand = new RelayCommand(SubmitReply);
             LikeCommentCommand = new RelayCommand(OnLikeComment);
+            DeleteCommentCommand = new RelayCommand(DeleteComment);
         }
 
         public int Id => _comment.Id;
@@ -44,7 +56,7 @@ namespace Duo.ViewModels
         public int? ParentCommentId => _comment.ParentCommentId;
         public string Content => _comment.Content;
         public string Username => _comment.Username;
-        public string Date => FormatDate(_comment.CreatedAt);
+        public string Date => DateTimeHelper.FormatDate(_comment.CreatedAt);
         public int Level => _comment.Level;
         
         public int LikeCount
@@ -62,7 +74,14 @@ namespace Duo.ViewModels
         public bool IsExpanded
         {
             get => _isExpanded;
-            set => SetProperty(ref _isExpanded, value);
+            set
+            {
+                if (SetProperty(ref _isExpanded, value))
+                {
+                    ToggleIconGlyph = value ? "\uE108" : "\uE109";
+                    PostDetailViewModel.CollapsedComments[Id] = !value;
+                }
+            }
         }
 
         public string ReplyText
@@ -77,20 +96,70 @@ namespace Duo.ViewModels
             set => SetProperty(ref _isReplyVisible, value);
         }
 
+        public bool IsDeleteButtonVisible
+        {
+            get => _isDeleteButtonVisible;
+            private set => SetProperty(ref _isDeleteButtonVisible, value);
+        }
+
+        public bool IsReplyButtonVisible
+        {
+            get => _isReplyButtonVisible;
+            private set => SetProperty(ref _isReplyButtonVisible, value);
+        }
+
+        public bool IsToggleButtonVisible
+        {
+            get => _isToggleButtonVisible;
+            private set => SetProperty(ref _isToggleButtonVisible, value);
+        }
+
+        public string ToggleIconGlyph
+        {
+            get => _toggleIconGlyph;
+            private set => SetProperty(ref _toggleIconGlyph, value);
+        }
+        public void LikeComment()
+        {
+            _comment.IncrementLikeCount();
+            LikeCount = _comment.LikeCount;
+        }
+
         public ICommand ToggleRepliesCommand { get; }
         public ICommand ShowReplyFormCommand { get; }
         public ICommand CancelReplyCommand { get; }
         public ICommand SubmitReplyCommand { get; }
         public ICommand LikeCommentCommand { get; }
+        public ICommand DeleteCommentCommand { get; }
 
         // Events
         public event EventHandler<Tuple<int, string>> ReplySubmitted;
         public event EventHandler<int> CommentLiked;
+        public event EventHandler<int> CommentDeleted;
+
+        private void UpdateVisibilityStates()
+        {
+            // Update reply button visibility based on nesting level
+            IsReplyButtonVisible = Level < MAX_NESTING_LEVEL;
+
+            // Update toggle button visibility based on replies
+            IsToggleButtonVisible = Replies != null && Replies.Count > 0;
+
+            // Update delete button visibility based on user ownership
+            try
+            {
+                var currentUser = userService.GetCurrentUser();
+                IsDeleteButtonVisible = currentUser != null && currentUser.UserId == UserId;
+            }
+            catch (Exception)
+            {
+                IsDeleteButtonVisible = false;
+            }
+        }
 
         private void ToggleReplies()
         {
             IsExpanded = !IsExpanded;
-            PostDetailViewModel.CollapsedComments[Id] = !IsExpanded;
         }
 
         private void ShowReplyForm()
@@ -107,51 +176,23 @@ namespace Duo.ViewModels
 
         private void SubmitReply()
         {
-            if (string.IsNullOrWhiteSpace(ReplyText))
-                return;
-
-            ReplySubmitted?.Invoke(this, new Tuple<int, string>(Id, ReplyText));
-            IsReplyVisible = false;
-            ReplyText = string.Empty;
+            if (!string.IsNullOrWhiteSpace(ReplyText))
+            {
+                ReplySubmitted?.Invoke(this, new Tuple<int, string>(Id, ReplyText));
+                IsReplyVisible = false;
+                ReplyText = string.Empty;
+            }
         }
 
         private void OnLikeComment()
         {
+            _comment.IncrementLikeCount();
             CommentLiked?.Invoke(this, Id);
         }
-        
-        public void LikeComment()
-        {
-            LikeCount++;
-            _comment.LikeCount = LikeCount;
-        }
 
-        private string FormatDate(DateTime date)
+        private void DeleteComment()
         {
-            // Try to get local time
-            try
-            {
-                if (date.Date == DateTime.Today)
-                {
-                    return "Today";
-                }
-                else if (date.Date == DateTime.Today.AddDays(-1))
-                {
-                    return "Yesterday";
-                }
-                else if ((DateTime.Today - date.Date).TotalDays < 7)
-                {
-                    return date.ToString("ddd"); // Day of week
-                }
-                
-                DateTime localDate = Duo.Helpers.DateTimeHelper.ConvertUtcToLocal(date);
-                return date.ToString("MMM d"); // Month + day
-            }
-            catch
-            {
-                // Fallback to simple format if helper methods fail
-                return date.ToString("MMM dd, yyyy HH:mm");
-            }
+            CommentDeleted?.Invoke(this, Id);
         }
     }
 }

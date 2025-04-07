@@ -13,15 +13,8 @@ namespace Duo.Views.Components
 {
     public sealed partial class Comment : UserControl
     {
-        // For backward compatibility
-        private Models.Comment _commentData;
-        private Dictionary<int?, List<Models.Comment>> _commentsByParent;
-        private readonly CommentService _commentService;
-        private const int MAX_NESTING_LEVEL = 3; 
-
         public event EventHandler<CommentReplyEventArgs> ReplySubmitted;
         public event EventHandler<CommentLikedEventArgs> CommentLiked;
-
         public event EventHandler<CommentDeletedEventArgs> CommentDeleted;
 
         public CommentViewModel ViewModel => DataContext as CommentViewModel;
@@ -30,11 +23,11 @@ namespace Duo.Views.Components
         {
             this.InitializeComponent();
 
-            _commentService = new CommentService(_commentRepository, _postRepository, userService);
-
             CommentReplyButton.Click += CommentReplyButton_Click;
             LikeButton.LikeClicked += LikeButton_LikeClicked;
             ReplyInputControl.CommentSubmitted += ReplyInput_CommentSubmitted;
+            DeleteButton.Click += DeleteButton_Click;
+            ToggleChildrenButton.Click += ToggleChildrenButton_Click;
             
             this.DataContextChanged += Comment_DataContextChanged;
             
@@ -81,89 +74,23 @@ namespace Duo.Views.Components
                 }
                 LevelLinesRepeater.ItemsSource = indentationLevels;
 
-                // Handle reply button visibility
-                CommentReplyButton.Visibility = (ViewModel.Level >= MAX_NESTING_LEVEL) 
-                    ? Visibility.Collapsed 
-                    : Visibility.Visible;
-
-                // Handle toggle button visibility
-                ToggleChildrenButton.Visibility = (ViewModel.Replies != null && ViewModel.Replies.Count > 0)
-                    ? Visibility.Visible
-                    : Visibility.Collapsed;
-
-                try
-                {
-                    var currentUser = userService.GetCurrentUser();
-                    if (currentUser != null && currentUser.UserId == ViewModel.UserId)
-                    {
-                        DeleteButton.Visibility = Visibility.Visible;
-                    }
-                }
-                catch (Exception)
-                {
-                    DeleteButton.Visibility = Visibility.Collapsed;
-                }
-
-                // Set initial toggle button state
-                if (ToggleChildrenButton.Visibility == Visibility.Visible)
-                {
-                    ToggleIcon.Glyph = ViewModel.IsExpanded ? "\uE108" : "\uE109";
-                }
-            }
-        }
-
-        // For backward compatibility
-        public void SetCommentData(Models.Comment comment, Dictionary<int?, List<Models.Comment>> commentsByParent)
-        {
-            _commentData = comment;
-            _commentsByParent = commentsByParent;
-            
-            var convertedDictionary = commentsByParent.Where(kvp => kvp.Key.HasValue)
-                                             .ToDictionary(kvp => kvp.Key.Value, kvp => kvp.Value);
-            
-            var viewModel = new CommentViewModel(comment, convertedDictionary);
-            this.DataContext = viewModel;
-
-          
-            
-            if (commentsByParent.ContainsKey(comment.Id))
-            {
-                ChildCommentsPanel.Children.Clear();
-                
-                foreach (var childComment in commentsByParent[comment.Id])
-                {
-                    var childCommentControl = new Comment();
-                    childCommentControl.SetCommentData(childComment, commentsByParent);
-                    childCommentControl.ReplySubmitted += ChildComment_ReplySubmitted;
-                    childCommentControl.CommentLiked += ChildComment_CommentLiked;
-                    ChildCommentsPanel.Children.Add(childCommentControl);
-                }
-            }
-        }
-
-        // For backward compatibility
-        public void SetChildrenCollapsed(bool collapsed)
-        {
-            if (ViewModel != null)
-            {
-                ViewModel.IsExpanded = !collapsed;
+                // Update UI based on ViewModel state
+                CommentReplyButton.Visibility = ViewModel.IsReplyButtonVisible ? Visibility.Visible : Visibility.Collapsed;
+                DeleteButton.Visibility = ViewModel.IsDeleteButtonVisible ? Visibility.Visible : Visibility.Collapsed;
+                ToggleChildrenButton.Visibility = ViewModel.IsToggleButtonVisible ? Visibility.Visible : Visibility.Collapsed;
+                ToggleIcon.Glyph = ViewModel.ToggleIconGlyph;
             }
         }
 
         private void ToggleChildrenButton_Click(object sender, RoutedEventArgs e)
         {
-            if (ViewModel != null)
-            {
-                ViewModel.IsExpanded = !ViewModel.IsExpanded;
-                ToggleIcon.Glyph = ViewModel.IsExpanded ? "\uE108" : "\uE109";
-            }
+            ViewModel?.ToggleRepliesCommand.Execute(null);
         }
 
         private void LikeButton_LikeClicked(object sender, LikeButtonClickedEventArgs e)
         {
             if (ViewModel != null && e.TargetType == LikeTargetType.Comment && e.TargetId == ViewModel.Id)
             {
-                // Use the CommentLiked event to bubble up to the PostDetailPage
                 CommentLiked?.Invoke(this, new CommentLikedEventArgs(ViewModel.Id));
             }
         }
@@ -175,7 +102,7 @@ namespace Duo.Views.Components
 
         private void CommentReplyButton_Click(object sender, RoutedEventArgs e)
         {
-            ShowReplyInput();
+            ViewModel?.ShowReplyFormCommand.Execute(null);
         }
 
         private void ReplyInput_CommentSubmitted(object sender, EventArgs e)
@@ -186,7 +113,6 @@ namespace Duo.Views.Components
             {
                 ReplySubmitted?.Invoke(this, new CommentReplyEventArgs(ViewModel.Id, commentInput.CommentText));
                 commentInput.ClearComment();
-                HideReplyInput();
             }
         }
 
@@ -196,68 +122,14 @@ namespace Duo.Views.Components
         }
 
         private void ChildComment_CommentDeleted(object sender, CommentDeletedEventArgs e)
-         {
-             CommentDeleted?.Invoke(this, e);
-         }
-
-        private void ShowReplyInput()
         {
-            ReplyInputControl.Visibility = Visibility.Visible;
-            ReplyInputControl.Focus(FocusState.Programmatic);
-        }
-
-        private void HideReplyInput()
-        {
-            ReplyInputControl.Visibility = Visibility.Collapsed;
-            ReplyInputControl.ClearComment();
+            CommentDeleted?.Invoke(this, e);
         }
 
         private void DeleteButton_Click(object sender, RoutedEventArgs e)
-         {
-             ShowDeleteConfirmation();
-         }
-
-         private async void ShowDeleteConfirmation()
-         {
-             var dialog = new ContentDialog
-             {
-                 Title = "Delete Comment",
-                 Content = "Are you sure you want to delete this comment? This action cannot be undone.",
-                 PrimaryButtonText = "Delete",
-                 CloseButtonText = "Cancel",
-                 DefaultButton = ContentDialogButton.Close
-             };
-
-             dialog.XamlRoot = this.XamlRoot;
-
-             var result = await dialog.ShowAsync();
-
-             if (result == ContentDialogResult.Primary)
-             {
-                 try
-                 {
-                     var currentUser = userService.GetCurrentUser();
-                     if (currentUser != null)
-                     {
-                         // Get comment ID from either ViewModel or _commentData
-                         int commentId = ViewModel != null ? ViewModel.Id : (_commentData != null ? _commentData.Id : -1);
-                         
-                         if (commentId > 0)
-                         {
-                             CommentDeleted?.Invoke(this, new CommentDeletedEventArgs(commentId));
-                         }
-                         else
-                         {
-                             System.Diagnostics.Debug.WriteLine("Error: Could not determine comment ID for deletion");
-                         }
-                     }
-                 }
-                 catch (Exception ex)
-                 {
-                     System.Diagnostics.Debug.WriteLine($"Error deleting comment: {ex.Message}");
-                 }
-             }
-         }
+        {
+            ViewModel?.DeleteCommentCommand.Execute(null);
+        }
     }
 
     public class CommentReplyEventArgs : EventArgs
@@ -283,12 +155,12 @@ namespace Duo.Views.Components
     }
 
     public class CommentDeletedEventArgs : EventArgs
-     {
-         public int CommentId { get; private set; }
+    {
+        public int CommentId { get; private set; }
 
-         public CommentDeletedEventArgs(int commentId)
-         {
-             CommentId = commentId;
-         }
-     }
+        public CommentDeletedEventArgs(int commentId)
+        {
+            CommentId = commentId;
+        }
+    }
 } 
