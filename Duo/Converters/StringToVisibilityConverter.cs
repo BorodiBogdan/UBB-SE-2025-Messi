@@ -8,9 +8,9 @@ namespace Duo.Converters
     {
         public object Convert(object value, Type targetType, object parameter, string language)
         {
-            if (value is string stringValue)
+            if (value is string inputString)
             {
-                return string.IsNullOrWhiteSpace(stringValue) ? Visibility.Collapsed : Visibility.Visible;
+                return string.IsNullOrWhiteSpace(inputString) ? Visibility.Collapsed : Visibility.Visible;
             }
             
             return Visibility.Collapsed;
