@@ -1397,5 +1397,252 @@ namespace TestProject1.Services
         }
         
         #endregion
+
+        #region GetFilteredAndFormattedPosts Tests
+
+        [Fact]
+        public void GetFilteredAndFormattedPosts_WithValidParameters_ReturnsFormattedPosts()
+        {
+            // Arrange
+            var expectedPosts = new List<Post>
+            {
+                new Post { Id = 1, Title = "Test Post 1", UserID = VALID_USER_ID },
+                new Post { Id = 2, Title = "Test Post 2", UserID = VALID_USER_ID }
+            };
+
+            _mockPostRepository.Setup(repo => repo.GetPaginatedPosts(VALID_PAGE_NUMBER, VALID_PAGE_SIZE))
+                .Returns(expectedPosts);
+            _mockPostRepository.Setup(repo => repo.GetTotalPostCount())
+                .Returns(expectedPosts.Count);
+            _mockUserService.Setup(service => service.GetUserById(VALID_USER_ID))
+                .Returns(new User(VALID_USER_ID, "TestUser"));
+            _mockHashtagRepository.Setup(repo => repo.GetHashtagsByPostId(It.IsAny<int>()))
+                .Returns(new List<Hashtag>());
+
+            // Act
+            var (posts, totalCount) = _postService.GetFilteredAndFormattedPosts(
+                null,
+                new List<string> { "All" },
+                string.Empty,
+                VALID_PAGE_NUMBER,
+                VALID_PAGE_SIZE);
+
+            // Assert
+            Assert.Equal(expectedPosts.Count, posts.Count);
+            Assert.Equal(expectedPosts.Count, totalCount);
+            Assert.All(posts, post => Assert.Equal("TestUser", post.Username));
+        }
+
+        [Fact]
+        public void GetFilteredAndFormattedPosts_WithHashtags_ReturnsFilteredPosts()
+        {
+            // Arrange
+            var hashtags = new List<string> { "test" };
+            var expectedPosts = new List<Post>
+            {
+                new Post { Id = 1, Title = "Test Post", UserID = VALID_USER_ID }
+            };
+
+            _mockPostRepository.Setup(repo => repo.GetPostsByHashtags(hashtags, VALID_PAGE_NUMBER, VALID_PAGE_SIZE))
+                .Returns(expectedPosts);
+            _mockPostRepository.Setup(repo => repo.GetPostCountByHashtags(hashtags))
+                .Returns(expectedPosts.Count);
+            _mockUserService.Setup(service => service.GetUserById(VALID_USER_ID))
+                .Returns(new User(VALID_USER_ID, "TestUser"));
+            _mockHashtagRepository.Setup(repo => repo.GetHashtagsByPostId(It.IsAny<int>()))
+                .Returns(new List<Hashtag>());
+
+            // Act
+            var (posts, totalCount) = _postService.GetFilteredAndFormattedPosts(
+                null,
+                hashtags,
+                string.Empty,
+                VALID_PAGE_NUMBER,
+                VALID_PAGE_SIZE);
+
+            // Assert
+            Assert.Single(posts);
+            Assert.Equal(expectedPosts.Count, totalCount);
+        }
+
+        [Fact]
+        public void GetFilteredAndFormattedPosts_WithCategory_ReturnsCategoryPosts()
+        {
+            // Arrange
+            var expectedPosts = new List<Post>
+            {
+                new Post { Id = 1, Title = "Test Post", UserID = VALID_USER_ID }
+            };
+
+            _mockPostRepository.Setup(repo => repo.GetPostsByCategoryId(VALID_CATEGORY_ID, VALID_PAGE_NUMBER, VALID_PAGE_SIZE))
+                .Returns(new Collection<Post>(expectedPosts));
+            _mockPostRepository.Setup(repo => repo.GetPostCountByCategory(VALID_CATEGORY_ID))
+                .Returns(expectedPosts.Count);
+            _mockUserService.Setup(service => service.GetUserById(VALID_USER_ID))
+                .Returns(new User(VALID_USER_ID, "TestUser"));
+            _mockHashtagRepository.Setup(repo => repo.GetHashtagsByPostId(It.IsAny<int>()))
+                .Returns(new List<Hashtag>());
+
+            // Act
+            var (posts, totalCount) = _postService.GetFilteredAndFormattedPosts(
+                VALID_CATEGORY_ID,
+                new List<string> { "All" },
+                string.Empty,
+                VALID_PAGE_NUMBER,
+                VALID_PAGE_SIZE);
+
+            // Assert
+            Assert.Single(posts);
+            Assert.Equal(expectedPosts.Count, totalCount);
+        }
+
+        [Fact]
+        public void GetFilteredAndFormattedPosts_WithSearchText_ReturnsFilteredPosts()
+        {
+            // Arrange
+            var searchText = "test";
+            var expectedPosts = new List<Post>
+            {
+                new Post { Id = 1, Title = "Test Post", UserID = VALID_USER_ID }
+            };
+
+            _mockPostRepository.Setup(repo => repo.GetPaginatedPosts(VALID_PAGE_NUMBER, int.MaxValue))
+                .Returns(expectedPosts);
+            _mockPostRepository.Setup(repo => repo.GetTotalPostCount())
+                .Returns(expectedPosts.Count);
+            _mockUserService.Setup(service => service.GetUserById(VALID_USER_ID))
+                .Returns(new User(VALID_USER_ID, "TestUser"));
+            _mockHashtagRepository.Setup(repo => repo.GetHashtagsByPostId(It.IsAny<int>()))
+                .Returns(new List<Hashtag>());
+            _mockSearchService.Setup(service => service.FindFuzzySearchMatches(
+                searchText, 
+                It.IsAny<IEnumerable<string>>(),
+                It.IsAny<double>()))
+                .Returns(new List<string> { "Test Post" });
+
+            // Act
+            var (posts, totalCount) = _postService.GetFilteredAndFormattedPosts(
+                null,
+                new List<string> { "All" },
+                searchText,
+                VALID_PAGE_NUMBER,
+                VALID_PAGE_SIZE);
+
+            // Assert
+            Assert.Single(posts);
+            Assert.Equal(expectedPosts.Count, totalCount);
+        }
+
+        [Fact]
+        public void GetFilteredAndFormattedPosts_WithInvalidParameters_ThrowsArgumentException()
+        {
+            // Act & Assert
+            Assert.Throws<ArgumentException>(() => _postService.GetFilteredAndFormattedPosts(
+                null,
+                new List<string>(),
+                string.Empty,
+                0,
+                VALID_PAGE_SIZE));
+        }
+
+        #endregion
+
+        #region ToggleHashtagSelection Tests
+
+        [Fact]
+        public void ToggleHashtagSelection_WithAllFilter_ReturnsOnlyAllFilter()
+        {
+            // Arrange
+            var currentHashtags = new HashSet<string> { "test1", "test2" };
+            var allFilter = "All";
+
+            // Act
+            var result = _postService.ToggleHashtagSelection(currentHashtags, allFilter, allFilter);
+
+            // Assert
+            Assert.Single(result);
+            Assert.Contains(allFilter, result);
+        }
+
+        [Fact]
+        public void ToggleHashtagSelection_WithExistingHashtag_RemovesHashtag()
+        {
+            // Arrange
+            var hashtag = "test";
+            var currentHashtags = new HashSet<string> { hashtag, "other" };
+            var allFilter = "All";
+
+            // Act
+            var result = _postService.ToggleHashtagSelection(currentHashtags, hashtag, allFilter);
+
+            // Assert
+            Assert.DoesNotContain(hashtag, result);
+            Assert.Contains("other", result);
+        }
+
+        [Fact]
+        public void ToggleHashtagSelection_WithNewHashtag_AddsHashtag()
+        {
+            // Arrange
+            var hashtag = "new";
+            var currentHashtags = new HashSet<string> { "existing" };
+            var allFilter = "All";
+
+            // Act
+            var result = _postService.ToggleHashtagSelection(currentHashtags, hashtag, allFilter);
+
+            // Assert
+            Assert.Contains(hashtag, result);
+            Assert.Contains("existing", result);
+        }
+
+        [Fact]
+        public void ToggleHashtagSelection_WithEmptyHashtag_ReturnsOriginalSet()
+        {
+            // Arrange
+            var currentHashtags = new HashSet<string> { "test" };
+            var allFilter = "All";
+
+            // Act
+            var result = _postService.ToggleHashtagSelection(currentHashtags, string.Empty, allFilter);
+
+            // Assert
+            Assert.Equal(currentHashtags, result);
+        }
+
+        [Fact]
+        public void ToggleHashtagSelection_WithLastHashtagRemoval_AddsAllFilter()
+        {
+            // Arrange
+            var hashtag = "test";
+            var currentHashtags = new HashSet<string> { hashtag };
+            var allFilter = "All";
+
+            // Act
+            var result = _postService.ToggleHashtagSelection(currentHashtags, hashtag, allFilter);
+
+            // Assert
+            Assert.Single(result);
+            Assert.Contains(allFilter, result);
+        }
+
+        [Fact]
+        public void ToggleHashtagSelection_WithHashtagAddition_RemovesAllFilter()
+        {
+            // Arrange
+            var hashtag = "test";
+            var currentHashtags = new HashSet<string> { "All" };
+            var allFilter = "All";
+
+            // Act
+            var result = _postService.ToggleHashtagSelection(currentHashtags, hashtag, allFilter);
+
+            // Assert
+            Assert.Single(result);
+            Assert.Contains(hashtag, result);
+            Assert.DoesNotContain(allFilter, result);
+        }
+
+        #endregion
     }
 } 

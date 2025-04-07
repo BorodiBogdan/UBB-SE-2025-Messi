@@ -26,6 +26,7 @@ namespace Duo.Services
         private const int MIN_PAGE_NUMBER = 1;
         private const int MIN_PAGE_SIZE = 1;
         private const int DEFAULT_COUNT = 0;
+        private const int DEFAULT_PAGE_NUMBER = 1;
 
         public PostService(IPostRepository postRepository, IHashtagRepository hashtagRepository, IUserService userService, ISearchService searchService)
         {
@@ -401,6 +402,151 @@ namespace Duo.Services
                 }
                 throw new Exception($"Error creating post with hashtags: {ex.Message}", ex);
             }
+        }
+
+        public List<Hashtag> GetHashtags(int? categoryId)
+        {
+            if(categoryId == null || categoryId <= INVALID_ID)
+                    return GetAllHashtags();
+            return GetHashtagsByCategory(categoryId.Value);
+
+        }
+
+        public (List<Post> Posts, int TotalCount) GetFilteredAndFormattedPosts(
+            int? categoryId,
+            List<string> selectedHashtags,
+            string filterText,
+            int currentPage,
+            int itemsPerPage)
+        {
+            if (currentPage < MIN_PAGE_NUMBER || itemsPerPage < MIN_PAGE_SIZE)
+            {
+                throw new ArgumentException("Invalid pagination parameters.");
+            }
+
+            try
+            {
+                IEnumerable<Post> filteredPosts;
+                int totalCount;
+
+                if (selectedHashtags.Count > DEFAULT_COUNT && !selectedHashtags.Contains("All"))
+                {
+                    filteredPosts = GetPostsByHashtags(selectedHashtags, currentPage, itemsPerPage);
+                    totalCount = GetPostCountByHashtags(selectedHashtags);
+                }
+                else if (categoryId.HasValue && categoryId.Value > INVALID_ID)
+                {
+                    if (!string.IsNullOrEmpty(filterText))
+                    {
+                        filteredPosts = GetPostsByCategory(categoryId.Value, DEFAULT_PAGE_NUMBER, int.MaxValue);
+                    }
+                    else
+                    {
+                        filteredPosts = GetPostsByCategory(categoryId.Value, currentPage, itemsPerPage);
+                    }
+                    totalCount = GetPostCountByCategoryId(categoryId.Value);
+                }
+                else
+                {
+                    if (!string.IsNullOrEmpty(filterText))
+                    {
+                        filteredPosts = GetPaginatedPosts(DEFAULT_PAGE_NUMBER, int.MaxValue);
+                    }
+                    else
+                    {
+                        filteredPosts = GetPaginatedPosts(currentPage, itemsPerPage);
+                    }
+                    totalCount = GetTotalPostCount();
+                }
+
+                if (!string.IsNullOrEmpty(filterText))
+                {
+                    var searchResults = new List<Post>();
+                    foreach (var post in filteredPosts)
+                    {
+                        if (_searchService.FindFuzzySearchMatches(filterText, new[] { post.Title }).Any())
+                        {
+                            searchResults.Add(post);
+                        }
+                    }
+
+                    totalCount = searchResults.Count;
+                    filteredPosts = searchResults
+                        .Skip((currentPage - DEFAULT_PAGE_NUMBER) * itemsPerPage)
+                        .Take(itemsPerPage);
+                }
+
+                var resultPosts = new List<Post>();
+                foreach (var post in filteredPosts)
+                {
+                    if (string.IsNullOrEmpty(post.Username))
+                    {
+                        var postAuthor = _userService.GetUserById(post.UserID);
+                        post.Username = postAuthor?.Username ?? "Unknown User";
+                    }
+
+                    DateTime localCreatedAt = Helpers.DateTimeHelper.ConvertUtcToLocal(post.CreatedAt);
+                    post.Date = Helpers.DateTimeHelper.GetRelativeTime(localCreatedAt);
+
+                    post.Hashtags.Clear();
+                    try
+                    {
+                        var postHashtags = GetHashtagsByPostId(post.Id);
+                        foreach (var hashtag in postHashtags)
+                        {
+                            post.Hashtags.Add(hashtag.Name);
+                        }
+                    }
+                    catch
+                    {
+                        // Continue if hashtag retrieval fails
+                    }
+
+                    resultPosts.Add(post);
+                }
+
+                return (resultPosts, totalCount);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error retrieving filtered and formatted posts: {ex.Message}");
+            }
+        }
+
+        public HashSet<string> ToggleHashtagSelection(HashSet<string> currentHashtags, string hashtagToToggle, string allHashtagsFilter)
+        {
+            if (string.IsNullOrEmpty(hashtagToToggle)) return currentHashtags;
+
+            var updatedHashtags = new HashSet<string>(currentHashtags);
+
+            if (hashtagToToggle == allHashtagsFilter)
+            {
+                updatedHashtags.Clear();
+                updatedHashtags.Add(allHashtagsFilter);
+            }
+            else
+            {
+                if (updatedHashtags.Contains(hashtagToToggle))
+                {
+                    updatedHashtags.Remove(hashtagToToggle);
+
+                    if (updatedHashtags.Count == DEFAULT_COUNT)
+                    {
+                        updatedHashtags.Add(allHashtagsFilter);
+                    }
+                }
+                else
+                {
+                    updatedHashtags.Add(hashtagToToggle);
+
+                    if (updatedHashtags.Contains(allHashtagsFilter))
+                    {
+                        updatedHashtags.Remove(allHashtagsFilter);
+                    }
+                }
+            }
+
+            return updatedHashtags;
         }
     }
 }
