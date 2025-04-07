@@ -7,13 +7,14 @@ using Duo.Services;
 using Duo.ViewModels.Base;
 using Microsoft.UI.Xaml.Controls;
 using System.Diagnostics;
+using Duo.Services.Interfaces;
 
 namespace Duo.ViewModels
 {
     public class CategoryPageViewModel : ViewModelBase
     {
-        private readonly CategoryService _categoryService;
-        private readonly UserService _userService;
+        private readonly ICategoryService _categoryService;
+        private readonly IUserService _userService;
         private readonly CategoryViewModel _categoryViewModel;
         
         private int _currentCategoryId = 0;
