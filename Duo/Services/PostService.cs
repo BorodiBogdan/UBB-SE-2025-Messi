@@ -557,18 +557,12 @@ namespace Duo.Services
                     post.Date = Helpers.DateTimeHelper.GetRelativeTime(localCreatedAt);
 
                     post.Hashtags.Clear();
-                    try
+                   
+                    var postHashtags = GetHashtagsByPostId(post.Id);
+                    foreach (var hashtag in postHashtags)
                     {
-                        var postHashtags = this.GetHashtagsByPostId(post.Id);
-                        foreach (var hashtag in postHashtags)
-                        {
-                            post.Hashtags.Add(hashtag.Name);
-                        }
-                    }
-                    catch
-                    {
-                        // Continue if hashtag retrieval fails
-                    }
+                        post.Hashtags.Add(hashtag.Name);
+                    }               
 
                     resultPosts.Add(post);
                 }
@@ -577,8 +571,7 @@ namespace Duo.Services
             }
             catch (Exception ex)
             {
-                var posts = GetPostsByHashtags(selectedHashtags, currentPage, itemsPerPage);
-                return (posts, posts.Count);
+                return (new List<Post>(), 0);
             }
         }
 
