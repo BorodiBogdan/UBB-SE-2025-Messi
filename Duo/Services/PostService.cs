@@ -626,5 +626,21 @@ namespace Duo.Services
 
             return updatedHashtags;
         }
+
+        public void AddAllHashtagsToPost(int createdPostId, string[] hashtags, int currentUserId)
+        {
+            foreach (var hashtag in hashtags)
+            {
+                try
+                {
+                    this.AddHashtagToPost(createdPostId, hashtag, currentUserId);
+                }
+                catch (Exception hashtagException)
+                {
+                    Debug.WriteLine($"Error adding hashtag '{hashtag}' to post: {hashtagException.Message}");
+                    // Continue with other hashtags even if one fails
+                }
+            }
+        }
     }
 }

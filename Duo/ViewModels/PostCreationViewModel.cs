@@ -14,6 +14,7 @@ using Duo.Views.Components;
 using System.Threading.Tasks;
 using Duo.Helpers;
 using Duo.Services.Interfaces;
+using System.Linq;
 
 namespace Duo.ViewModels
 {
@@ -153,27 +154,11 @@ namespace Duo.ViewModels
 
         public void CreatePost()
         {
-            if (string.IsNullOrWhiteSpace(Title) || string.IsNullOrWhiteSpace(Content))
-            {
-                LastError = "Title and content are required.";
-                return;
-            }
 
             var (isTitleValid, titleError) = ValidationHelper.ValidatePostTitle(Title);
-            if (!isTitleValid)
-            {
-                LastError = titleError;
-                return;
-            }
-
-            if (SelectedCategoryId <= INVALID_ID)
-            {
-                LastError = "Please select a community for your post.";
-                return;
-            }
-
+            LastError = ValidationHelper.UpdateLastErrorInfo(isTitleValid, titleError);
             IsLoading = true;
-            LastError = EMPTY_STRING;
+        
 
             try
             {
@@ -197,18 +182,7 @@ namespace Duo.ViewModels
                 // Add hashtags if any
                 if (Hashtags.Count > DEFAULT_COUNT)
                 {
-                    foreach (var hashtagText in Hashtags)
-                    {
-                        try
-                        {
-                            _postService.AddHashtagToPost(createdPostId, hashtagText, currentUser.UserId);
-                        }
-                        catch (Exception hashtagException)
-                        {
-                            Debug.WriteLine($"Error adding hashtag '{hashtagText}' to post: {hashtagException.Message}");
-                            // Continue with other hashtags even if one fails
-                        }
-                    }
+                    _postService.AddAllHashtagsToPost(createdPostId,Hashtags.ToArray(), currentUser.UserId);
                 }
 
                 // Handle success
@@ -404,6 +378,7 @@ namespace Duo.ViewModels
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
+
 
     }
 }
