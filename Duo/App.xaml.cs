@@ -22,7 +22,6 @@ using Duo.ViewModels;
 using Duo.Services;
 using Duo.Data;
 using Duo.Repositories;
-using Duo.Repositories.Interfaces;
 
 namespace Duo
 {
@@ -34,7 +33,7 @@ namespace Duo
         public static DataLink _dataLink;
         public static UserRepository userRepository;
         public static PostRepository _postRepository;
-        public static IHashtagRepository _hashtagRepository;
+        public static HashtagRepository _hashtagRepository;
         public static CommentRepository _commentRepository;
         public static PostService _postService;
         public static CategoryService _categoryService;
