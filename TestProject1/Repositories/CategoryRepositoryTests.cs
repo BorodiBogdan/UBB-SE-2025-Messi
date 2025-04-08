@@ -50,10 +50,6 @@ namespace TestProject1.Repositories
         [Fact]
         public void GetCategories_DatabaseException_LogsErrorAndReturnsEmptyList()
         {
-            // Arrange
-            var mockConsole = new MockConsole();
-            Console.SetOut(mockConsole);
-            
             // Create a database exception test parameter
             var exceptionTestParam = new SqlParameter("DatabaseExceptionTest", true);
             
@@ -192,23 +188,6 @@ namespace TestProject1.Repositories
             
             // Act & Assert
             Assert.Throws<NotImplementedException>(() => mockConnection.ExecuteScalar<int>("AnyProcedure"));
-        }
-    }
-    
-    // Helper class to mock Console.WriteLine for testing
-    public class MockConsole : System.IO.TextWriter
-    {
-        public override System.Text.Encoding Encoding => System.Text.Encoding.UTF8;
-        public string Output { get; private set; } = "";
-        
-        public override void WriteLine(string value)
-        {
-            Output += value + "\n";
-        }
-        
-        public override void Write(string value)
-        {
-            Output += value;
         }
     }
 } 

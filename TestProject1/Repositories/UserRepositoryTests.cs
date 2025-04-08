@@ -33,9 +33,6 @@ namespace TestProject1.Repositories
             _userDataTable.Rows.Add(1, "User1");
             _userDataTable.Rows.Add(2, "User2");
             _userDataTable.Rows.Add(3, "User3");
-            
-            // We don't need to configure mock behavior here since it's already handled
-            // in the MockDatabaseConnectionUserRepository class implementation
         }
 
         [Fact]

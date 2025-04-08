@@ -1,8 +1,5 @@
 ﻿using TestProject1.Commands;
 
-// <copyright file="RelayCommandTests.cs" company="PlaceholderCompany">
-// Copyright (c) PlaceholderCompany. All rights reserved.
-// </copyright>
 
 namespace TestProject1.Commands
 {
@@ -10,28 +7,17 @@ namespace TestProject1.Commands
     using System.Windows.Input;
     using Duo.Commands;
     using Xunit;
-
-    /// <summary>
-    /// Contains unit tests for the RelayCommand class.
-    /// </summary>
     public class RelayCommandTests : IDisposable
     {
         private bool executeCalled;
         private bool canExecuteCalled;
         private RelayCommand relayCommand;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="RelayCommandTests"/> class.
-        /// </summary>
         public RelayCommandTests()
         {
             this.executeCalled = false;
             this.canExecuteCalled = false;
         }
 
-        /// <summary>
-        /// Tests that the constructor throws ArgumentNullException when execute action is null.
-        /// </summary>
         [Fact]
         public void Constructor_ExecuteActionIsNull_ThrowsArgumentNullException()
         {
@@ -40,9 +26,6 @@ namespace TestProject1.Commands
             Assert.Equal("execute", exception.ParamName);
         }
 
-        /// <summary>
-        /// Tests that the constructor properly assigns the execute action when it's not null.
-        /// </summary>
         [Fact]
         public void Constructor_ExecuteActionNotNull_AssignsAction()
         {
@@ -57,9 +40,6 @@ namespace TestProject1.Commands
             Assert.True(this.executeCalled);
         }
 
-        /// <summary>
-        /// Tests that the constructor initializes the command with valid parameters.
-        /// </summary>
         [Fact]
         public void Constructor_ValidParameters_InitializesCommand()
         {
@@ -82,9 +62,6 @@ namespace TestProject1.Commands
             Assert.True(canExecuteResult);
         }
 
-        /// <summary>
-        /// Tests that CanExecute returns true when canExecute function is not provided.
-        /// </summary>
         [Fact]
         public void CanExecute_NoCanExecuteFunction_ReturnsTrue()
         {
@@ -98,9 +75,6 @@ namespace TestProject1.Commands
             Assert.True(result);
         }
 
-        /// <summary>
-        /// Tests that CanExecute returns false when canExecute function returns false.
-        /// </summary>
         [Fact]
         public void CanExecute_WithCanExecuteFunctionReturnsFalse_ReturnsFalse()
         {
@@ -116,9 +90,6 @@ namespace TestProject1.Commands
             Assert.False(result);
         }
 
-        /// <summary>
-        /// Tests that CanExecute calls the provided canExecute function.
-        /// </summary>
         [Fact]
         public void CanExecute_WithCanExecuteFunction_CallsFunction()
         {
@@ -134,9 +105,6 @@ namespace TestProject1.Commands
             Assert.True(this.canExecuteCalled);
         }
 
-        /// <summary>
-        /// Tests that Execute calls the provided execute action.
-        /// </summary>
         [Fact]
         public void Execute_CallsExecuteAction()
         {
@@ -150,9 +118,6 @@ namespace TestProject1.Commands
             Assert.True(this.executeCalled);
         }
 
-        /// <summary>
-        /// Tests that RaiseCanExecuteChanged invokes the CanExecuteChanged event.
-        /// </summary>
         [Fact]
         public void RaiseCanExecuteChanged_InvokesCanExecuteChangedEvent()
         {
@@ -168,9 +133,6 @@ namespace TestProject1.Commands
             Assert.True(eventRaised);
         }
 
-        /// <summary>
-        /// Tests that RaiseCanExecuteChanged does not throw when no handlers are attached.
-        /// </summary>
         [Fact]
         public void RaiseCanExecuteChanged_NoHandlersAttached_DoesNotThrow()
         {
@@ -182,9 +144,6 @@ namespace TestProject1.Commands
             Assert.Null(exception);
         }
 
-        /// <summary>
-        /// Tests that CanExecuteChanged event can be subscribed to and unsubscribed from.
-        /// </summary>
         [Fact]
         public void CanExecuteChanged_CanSubscribeAndUnsubscribe()
         {
@@ -208,9 +167,6 @@ namespace TestProject1.Commands
             Assert.False(secondCall);
         }
 
-        /// <summary>
-        /// Tests that Execute with parameter calls the execute action.
-        /// </summary>
         [Fact]
         public void Execute_WithParameter_CallsExecuteAction()
         {
@@ -224,9 +180,6 @@ namespace TestProject1.Commands
             Assert.True(this.executeCalled);
         }
 
-        /// <summary>
-        /// Tests that CanExecute with parameter calls the canExecute function.
-        /// </summary>
         [Fact]
         public void CanExecute_WithParameter_CallsCanExecuteFunction()
         {
@@ -242,9 +195,6 @@ namespace TestProject1.Commands
             Assert.True(this.canExecuteCalled);
         }
 
-        /// <summary>
-        /// Disposes of the test resources.
-        /// </summary>
         public void Dispose()
         {
             this.relayCommand = null;

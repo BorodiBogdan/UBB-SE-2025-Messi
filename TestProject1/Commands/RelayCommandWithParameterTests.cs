@@ -9,9 +9,6 @@ namespace TestProject1.Commands
     using Duo.Commands;
     using Xunit;
 
-    /// <summary>
-    /// Contains unit tests for the RelayCommandWithParameter class.
-    /// </summary>
     public class RelayCommandWithParameterTests : IDisposable
     {
         private bool executeCalled;
@@ -19,9 +16,6 @@ namespace TestProject1.Commands
         private string lastParameter;
         private RelayCommandWithParameter<string> relayCommand;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="RelayCommandWithParameterTests"/> class.
-        /// </summary>
         public RelayCommandWithParameterTests()
         {
             this.executeCalled = false;
@@ -29,9 +23,6 @@ namespace TestProject1.Commands
             this.lastParameter = null;
         }
 
-        /// <summary>
-        /// Tests that the constructor throws ArgumentNullException when execute action is null.
-        /// </summary>
         [Fact]
         public void Constructor_ExecuteActionIsNull_ThrowsArgumentNullException()
         {
@@ -39,9 +30,6 @@ namespace TestProject1.Commands
             Assert.Throws<ArgumentNullException>(() => new RelayCommandWithParameter<string>(null));
         }
 
-        /// <summary>
-        /// Tests that the constructor initializes the command with valid parameters.
-        /// </summary>
         [Fact]
         public void Constructor_ValidParameters_InitializesCommand()
         {
@@ -56,9 +44,6 @@ namespace TestProject1.Commands
             Assert.NotNull(this.relayCommand);
         }
 
-        /// <summary>
-        /// Tests that CanExecute returns true when canExecute function is not provided.
-        /// </summary>
         [Fact]
         public void CanExecute_NoCanExecuteFunction_ReturnsTrue()
         {
@@ -72,9 +57,6 @@ namespace TestProject1.Commands
             Assert.True(result);
         }
 
-        /// <summary>
-        /// Tests that CanExecute returns false when parameter is null for value type.
-        /// </summary>
         [Fact]
         public void CanExecute_NullParameterForValueType_ReturnsFalse()
         {
@@ -88,9 +70,6 @@ namespace TestProject1.Commands
             Assert.True(result);
         }
 
-        /// <summary>
-        /// Tests that CanExecute returns true for non-null value type parameter.
-        /// </summary>
         [Fact]
         public void CanExecute_NonNullValueTypeParameter_ReturnsTrue()
         {
@@ -104,9 +83,6 @@ namespace TestProject1.Commands
             Assert.True(result);
         }
 
-        /// <summary>
-        /// Tests that CanExecute calls the provided canExecute function.
-        /// </summary>
         [Fact]
         public void CanExecute_WithCanExecuteFunction_CallsFunction()
         {
@@ -122,9 +98,6 @@ namespace TestProject1.Commands
             Assert.True(this.canExecuteCalled);
         }
 
-        /// <summary>
-        /// Tests that Execute calls the provided execute action with the correct parameter.
-        /// </summary>
         [Fact]
         public void Execute_CallsExecuteActionWithParameter()
         {
@@ -144,9 +117,6 @@ namespace TestProject1.Commands
             Assert.Equal(testParameter, this.lastParameter);
         }
 
-        /// <summary>
-        /// Tests that RaiseCanExecuteChanged invokes the CanExecuteChanged event.
-        /// </summary>
         [Fact]
         public void RaiseCanExecuteChanged_InvokesCanExecuteChangedEvent()
         {
@@ -162,9 +132,6 @@ namespace TestProject1.Commands
             Assert.True(eventRaised);
         }
 
-        /// <summary>
-        /// Tests that CanExecuteChanged event can be subscribed to and unsubscribed from.
-        /// </summary>
         [Fact]
         public void CanExecuteChanged_CanSubscribeAndUnsubscribe()
         {
@@ -188,9 +155,6 @@ namespace TestProject1.Commands
             Assert.False(secondCall);
         }
 
-        /// <summary>
-        /// Tests that CanExecute returns the result of the canExecute function.
-        /// </summary>
         [Fact]
         public void CanExecute_ReturnsCanExecuteFunctionResult()
         {
@@ -208,9 +172,6 @@ namespace TestProject1.Commands
             Assert.False(invalidResult);
         }
 
-        /// <summary>
-        /// Disposes of the test resources.
-        /// </summary>
         public void Dispose()
         {
             this.relayCommand = null;
